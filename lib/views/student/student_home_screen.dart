@@ -1,0 +1,247 @@
+﻿import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../core/constants/app_colors.dart';
+import '../../models/print_order_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/order_provider.dart';
+import '../auth/login_screen.dart';
+import 'create_order_screen.dart';
+import 'order_qr_screen.dart';
+
+class StudentHomeScreen extends StatefulWidget {
+  const StudentHomeScreen({super.key});
+
+  @override
+  State<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends State<StudentHomeScreen> {
+  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().loadMyOrders();
+    });
+  }
+
+  Future<void> _handleCancel(String orderId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận hủy đơn'),
+        content: const Text('Bạn có chắc chắn muốn hủy đơn in này không? Chỉ có thể hủy khi đơn chưa được in.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Đóng')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCancelled, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hủy đơn'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final success = await context.read<OrderProvider>().cancelOrder(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Đã hủy đơn thành công' : 'Không thể hủy đơn'),
+            backgroundColor: success ? AppColors.statusCompleted : AppColors.statusCancelled,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận đăng xuất'),
+        content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCancelled, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Đăng xuất'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await context.read<AuthProvider>().logout();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final orderProvider = context.watch<OrderProvider>();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('UniPrint Mobile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Xin chào, ${auth.currentUser?.fullName ?? 'Sinh viên'}',
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Đăng xuất',
+            onPressed: _handleLogout,
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () => orderProvider.loadMyOrders(),
+        child: orderProvider.isLoading && orderProvider.myOrders.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : orderProvider.myOrders.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.inbox_outlined, size: 64, color: AppColors.textLight),
+                        const SizedBox(height: 12),
+                        const Text('Bạn chưa có đơn in nào', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('Tạo đơn in mới'),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: orderProvider.myOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = orderProvider.myOrders[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    order.orderCode,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: order.status.color.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: order.status.color),
+                                    ),
+                                    child: Text(
+                                      order.status.label,
+                                      style: TextStyle(color: order.status.color, fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                order.documentName,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${order.numberOfCopies} bản • ${order.isColor ? "In màu" : "In đen trắng"} • ${order.isDoubleSided ? "2 mặt" : "1 mặt"}',
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                              ),
+                              if (order.shelfCode != null) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.shelves, size: 16, color: AppColors.secondary),
+                                    const SizedBox(width: 4),
+                                    Text('Vị trí nhận: Kệ ${order.shelfCode}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                                  ],
+                                ),
+                              ],
+                              const Divider(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _currencyFormat.format(order.totalPrice),
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  ),
+                                  Row(
+                                    children: [
+                                      if (order.status == OrderStatus.readyForPickup || order.status == OrderStatus.shelfAssigned)
+                                        ElevatedButton.icon(
+                                          icon: const Icon(Icons.qr_code, size: 16),
+                                          label: const Text('Mã QR nhận', style: TextStyle(fontSize: 12)),
+                                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white),
+                                          onPressed: () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => OrderQrScreen(order: order)),
+                                          ),
+                                        ),
+                                      if (order.canCancel) ...[
+                                        const SizedBox(width: 8),
+                                        OutlinedButton(
+                                          style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusCancelled),
+                                          onPressed: () => _handleCancel(order.id),
+                                          child: const Text('Hủy', style: TextStyle(fontSize: 12)),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_circle_outline),
+        label: const Text('Đặt In Ngay'),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
+        ),
+      ),
+    );
+  }
+}
