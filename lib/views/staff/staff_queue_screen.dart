@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -108,48 +108,102 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                       ],
                     ),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: orderProvider.staffQueue.length,
-                    itemBuilder: (context, index) {
-                      final order = orderProvider.staffQueue[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    order.orderCode,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: order.status.color.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: order.status.color),
-                                    ),
-                                    child: Text(
-                                      order.status.label,
-                                      style: TextStyle(color: order.status.color, fontWeight: FontWeight.bold, fontSize: 12),
-                                    ),
-                                  ),
-                                ],
+                : Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        color: Colors.white,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.sort_rounded, size: 20, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Hàng đợi in (FIFO - Ưu tiên đơn trước)',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.primary),
                               ),
-                              const SizedBox(height: 6),
-                              Text('Sinh viên: ${order.studentName}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                              Text('Tài liệu: ${order.documentName}', style: const TextStyle(color: AppColors.textSecondary)),
-                              Text(
-                                '${order.numberOfCopies} bản • ${order.isColor ? "Màu" : "Đen trắng"} • ${order.isDoubleSided ? "2 mặt" : "1 mặt"} • ${_currencyFormat.format(order.totalPrice)}',
-                                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              child: Text(
+                                '${orderProvider.staffQueue.length} đơn chờ',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: orderProvider.staffQueue.length,
+                          itemBuilder: (context, index) {
+                            final order = orderProvider.staffQueue[index];
+                            final timeStr = DateFormat('HH:mm - dd/MM/yyyy').format(order.createdAt);
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 2,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 12,
+                                              backgroundColor: AppColors.primary,
+                                              child: Text(
+                                                '#${index + 1}',
+                                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              order.orderCode,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: order.status.color.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: order.status.color),
+                                          ),
+                                          child: Text(
+                                            order.status.label,
+                                            style: TextStyle(color: order.status.color, fontWeight: FontWeight.bold, fontSize: 12),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text('Sinh viên: ${order.studentName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                    Text('Tài liệu: ${order.documentName}', style: const TextStyle(color: AppColors.textSecondary)),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.access_time_rounded, size: 14, color: AppColors.textSecondary),
+                                        const SizedBox(width: 4),
+                                        Text('Thời gian đặt: $timeStr', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${order.numberOfCopies} bản • ${order.isColor ? "Màu" : "Đen trắng"} • ${order.isDoubleSided ? "2 mặt" : "1 mặt"} • ${_currencyFormat.format(order.totalPrice)}',
+                                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                                    ),
                               const Divider(height: 18),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -198,6 +252,9 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                       );
                     },
                   ),
+                ),
+              ],
+            ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.secondary,
