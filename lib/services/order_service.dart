@@ -1,4 +1,4 @@
-﻿import '../core/constants/api_endpoints.dart';
+import '../core/constants/api_endpoints.dart';
 import '../core/network/api_client.dart';
 import '../models/print_order_model.dart';
 
@@ -24,7 +24,8 @@ class OrderService {
       withAuth: false,
     );
 
-    final data = (response is Map<String, dynamic> && response.containsKey('data'))
+    final data =
+        (response is Map<String, dynamic> && response.containsKey('data'))
         ? response['data']
         : response;
     return PriceCalculationResult.fromJson(data);
@@ -55,7 +56,8 @@ class OrderService {
       withAuth: true,
     );
 
-    final data = (response is Map<String, dynamic> && response.containsKey('data'))
+    final data =
+        (response is Map<String, dynamic> && response.containsKey('data'))
         ? response['data']
         : response;
     return PrintOrderModel.fromJson(data);
@@ -63,7 +65,8 @@ class OrderService {
 
   static Future<List<PrintOrderModel>> getMyOrders() async {
     final response = await ApiClient.get(ApiEndpoints.myOrders, withAuth: true);
-    final data = (response is Map<String, dynamic> && response.containsKey('data'))
+    final data =
+        (response is Map<String, dynamic> && response.containsKey('data'))
         ? response['data']
         : response;
 
@@ -74,8 +77,12 @@ class OrderService {
   }
 
   static Future<List<PrintOrderModel>> getStaffQueue() async {
-    final response = await ApiClient.get(ApiEndpoints.staffQueue, withAuth: true);
-    final data = (response is Map<String, dynamic> && response.containsKey('data'))
+    final response = await ApiClient.get(
+      ApiEndpoints.staffQueue,
+      withAuth: true,
+    );
+    final data =
+        (response is Map<String, dynamic> && response.containsKey('data'))
         ? response['data']
         : response;
 
@@ -94,14 +101,25 @@ class OrderService {
   }
 
   static Future<PrintOrderModel> scanPickupQr(String qrToken) async {
+    final token = qrToken.trim();
+    if (token.isEmpty) throw ArgumentError('Vui lòng nhập mã QR.');
     final response = await ApiClient.post(
-      '${ApiEndpoints.scanPickupQr}?qrToken=$qrToken',
+      Uri.parse(ApiEndpoints.scanPickupQr)
+          .replace(queryParameters: {'qrToken': token})
+          .toString(),
       withAuth: true,
     );
-    final data = (response is Map<String, dynamic> && response.containsKey('data'))
+    final data =
+        (response is Map<String, dynamic> && response.containsKey('data'))
         ? response['data']
         : response;
-    return PrintOrderModel.fromJson(data);
+    final order = PrintOrderModel.fromJson(data);
+    if (order.id.isEmpty || order.status != OrderStatus.completed) {
+      throw ApiResponseException(
+        'Máy chủ chưa xác nhận đơn đã hoàn thành. Vui lòng tải lại đơn trước khi thử tiếp.',
+      );
+    }
+    return order;
   }
 
   static Future<void> cancelOrder(String id) async {

@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
 import '../models/print_order_model.dart';
 import '../services/order_service.dart';
 
@@ -7,6 +8,7 @@ class OrderProvider extends ChangeNotifier {
   List<PrintOrderModel> _staffQueue = [];
   PriceCalculationResult? _estimatedPrice;
   bool _isLoading = false;
+  bool _isVerifyingPickup = false;
   String? _errorMessage;
 
   List<PrintOrderModel> get myOrders => _myOrders;
@@ -14,6 +16,14 @@ class OrderProvider extends ChangeNotifier {
   PriceCalculationResult? get estimatedPrice => _estimatedPrice;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  Future<PrintOrderModel> loadPickupOrder(String id) async {
+    final orders = await OrderService.getMyOrders();
+    final order = orders.firstWhere((order) => order.id == id);
+    _myOrders = orders;
+    notifyListeners();
+    return order;
+  }
 
   Future<void> loadMyOrders() async {
     _isLoading = true;
@@ -116,19 +126,30 @@ class OrderProvider extends ChangeNotifier {
   }
 
   Future<PrintOrderModel?> verifyPickup(String qrToken) async {
+    if (_isVerifyingPickup) return null;
+    _isVerifyingPickup = true;
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
       final res = await OrderService.scanPickupQr(qrToken);
-      await loadStaffQueue();
-      _isLoading = false;
-      notifyListeners();
+      _staffQueue.removeWhere((order) => order.id == res.id);
+      final index = _myOrders.indexWhere((order) => order.id == res.id);
+      if (index >= 0) _myOrders[index] = res;
+      try {
+        _staffQueue = await OrderService.getStaffQueue();
+      } catch (_) {
+        _errorMessage =
+            'Đã hoàn tất nhận tài liệu nhưng chưa tải lại được hàng đợi.';
+      }
       return res;
     } catch (e) {
       _errorMessage = e.toString();
+      return null;
+    } finally {
+      _isVerifyingPickup = false;
       _isLoading = false;
       notifyListeners();
-      return null;
     }
   }
 
