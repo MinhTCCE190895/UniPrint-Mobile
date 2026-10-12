@@ -52,7 +52,8 @@ class _StaffQrScannerScreenState extends State<StaffQrScannerScreen>
 
   Future<void> _handleQrDetected(String qrToken) async {
     if (_isProcessing) return;
-    if (context.read<AuthProvider>().currentUser?.isStaff != true) {
+    final user = context.read<AuthProvider>().currentUser;
+    if (user == null || (!user.isStaff && !user.isAdmin)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Chỉ nhân viên được xác nhận nhận tài liệu.'),
