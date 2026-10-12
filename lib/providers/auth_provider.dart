@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../core/utils/storage_service.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -93,6 +93,12 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     await StorageService.clearSession();
     _currentUser = null;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setUserForTesting(UserModel? user) {
+    _currentUser = user;
     notifyListeners();
   }
 }

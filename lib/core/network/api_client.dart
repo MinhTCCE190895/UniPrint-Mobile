@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../utils/storage_service.dart';
@@ -69,6 +69,56 @@ class ApiClient {
     try {
       final headers = await _getHeaders(withAuth: withAuth);
       final response = await http.delete(Uri.parse(url), headers: headers);
+      return _processResponse(response);
+    } on SocketException {
+      throw ApiResponseException('Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc backend.');
+    }
+  }
+
+  static Future<dynamic> uploadMultipart(
+    String url, {
+    required String fileField,
+    String? filePath,
+    List<int>? fileBytes,
+    required String fileName,
+    Map<String, String>? fields,
+    bool withAuth = true,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+
+      if (withAuth) {
+        final token = await StorageService.getToken();
+        if (token != null && token.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
+      }
+      request.headers['Accept'] = 'application/json';
+
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      if (fileBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            fileField,
+            fileBytes,
+            filename: fileName,
+          ),
+        );
+      } else if (filePath != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            fileField,
+            filePath,
+            filename: fileName,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
       return _processResponse(response);
     } on SocketException {
       throw ApiResponseException('Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc backend.');
