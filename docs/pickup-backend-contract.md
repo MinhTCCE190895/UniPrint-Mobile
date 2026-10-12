@@ -1,25 +1,28 @@
-# Pickup QR: backend integration pending
+# Task 16 & 17 — Pickup QR
 
-The backend source is not present in the inspected UniPrint checkout. The mobile changes do not implement server token issuance, expiry enforcement, or shelf release.
+## Implementation
 
-## Required response
+Backend: ../UniPrint-Backend. Preserve API -> Business service -> UnitOfWork/repositories -> EF Core. Mobile preserves views -> providers -> services -> ApiClient.
 
-GET /api/printorders/my-orders must return qrToken and qrExpiresAt (ISO 8601 with UTC offset) for eligible orders. The client only displays QR for status 5 (ReadyForPickup), a nonempty token, and a future deadline. Missing expiry fails closed. The field name qrExpiresAt is proposed and must be aligned with the actual backend DTO.
+The backend FEATURES_AND_USE_CASES sequence creates PickupQR with Payment when the order is created. Each token expires seven days after issuance. Reopening the mobile screen does not change expiry. EC04 rejects expired pickup while preserving ReadyForPickup and the shelf occupancy.
 
-## EC04
+GET /api/printorders/my-orders returns qrToken and qrExpiresAt (UTC ISO 8601) in each order. The mobile displays QR only for ReadyForPickup with a nonempty token and future expiry. Missing expiry fails closed.
 
-Confirm the expiry starting event against the full EC04 specification. Proposed behavior: issue an unpredictable token when an order becomes eligible for pickup with an assigned shelf slot, and set expiry to issuance plus seven days. Reopening the mobile screen must not extend expiry. Expiry must be enforced by the server clock; the mobile clock only controls display.
+POST /api/printorders/scan-pickup-qr?qrToken=... requires Staff/Admin JWT. Success now returns ApiResponse<PrintOrderResponseDto> with status Completed, replacing the previous boolean payload. Existing Razor Pages only read Success/Message and remain compatible.
 
-## Existing pickup endpoint
+Business checks active staff/admin, token, unused state, expiry, ReadyForPickup, and a shelf with positive occupancy. One EF SaveChanges transaction consumes QR, completes the order and decrements occupancy. Existing IsUsed, Status and CurrentCount columns are concurrency tokens: stale writes roll back rather than decrementing twice. No new database columns are required.
 
-POST /api/printorders/scan-pickup-qr?qrToken=... with Bearer authentication. Validate staff authorization, token, expiry, unused state, order readiness, and assigned slot. Atomically consume the token, mark order Completed (6), and release only the slot assigned to this order. Roll back all writes on failure. Concurrent scans must not complete twice. Return the completed order after commit. Prevent generic status update APIs from bypassing this operation.
+Razor pickup now requires authenticated Staff/Admin and uses the authenticated user ID rather than a hardcoded demo account. Student order detail access is restricted to the student's own orders.
 
-Use distinguishable errors for forbidden, invalid token, expired token, already collected, and invalid order state. Do not log pickup tokens. Shelf release is not claimed in the mobile success message because its server implementation is unverified.
+## Verification
 
-## Integration acceptance
+Backend tests use SQLite for relational transaction rollback and stale updates, alongside the existing tests. Mobile tests cover expiry boundaries, invalid statuses, missing expiry, offline refresh and completed refresh. Build and automated tests do not replace device camera and deployment SQL Server verification.
 
-- Valid pickup commits Completed, token consumption, and shelf release together.
-- Before expiry succeeds; at or after expiry fails without mutations.
-- Student callers, invalid tokens, cancelled orders, and repeat scans fail without mutations.
-- Concurrent scans have one successful transition; a mid-transaction failure leaves all state unchanged.
-- Verify camera permissions and denial recovery on physical Android/iOS devices.
+Run backend tests: dotnet test UniPrint.Tests/UniPrint.Tests.csproj
+Run mobile checks: dart analyze; flutter test --no-pub
+
+## Run together
+
+Start configured SQL Server, then run dotnet run --project UniPrint.API --launch-profile http in the backend. API launchSettings uses port 5045. Start mobile with API_BASE_URL pointing to that API (Windows localhost; Android emulator 10.0.2.2; physical phone the server LAN IP). Seed student/staff: student@uniprint.edu.vn / staff@uniprint.edu.vn, password 123456.
+
+Pickup requires a shelf assigned through the existing assign-shelf operation. Shelf administration remains the existing group feature. Expired QR reissue is outside tasks 16/17; EC04 leaves the order waiting for reissue.

@@ -76,17 +76,17 @@ flutter run
 ```
 
 ### 3. Tài khoản demo có sẵn (có nút bấm nhanh ở màn hình Login):
-- **Sinh viên**: `student@fpt.edu.vn` / `Student@123`
-- **Nhân viên (Staff)**: `staff@fpt.edu.vn` / `Staff@123`
+- **Sinh viên**: `student@uniprint.edu.vn` / `123456`
+- **Nhân viên (Staff)**: `staff@uniprint.edu.vn` / `123456`
 
 ## Task 16 & 17 — Pickup QR
 
 Giữ nguyên luồng `views → providers → services → core/network`. Mobile hiển thị QR bằng `qr_flutter` và staff quét bằng `mobile_scanner` hoặc nhập token thủ công.
 
-- QR dùng token từ API, không dùng ID đơn thay thế. API cần trả `qrExpiresAt` theo ISO 8601 có múi giờ (tên trường đề xuất, cần đối chiếu backend).
+- QR dùng token từ API, không dùng ID đơn thay thế. API cần trả `qrExpiresAt` theo ISO 8601 có múi giờ.
 - Chỉ hiển thị mã cho đơn ReadyForPickup còn hạn. Mã bị ẩn ngay tại thời điểm hết hạn; dữ liệu được tải lại khi mở màn hình hoặc quay lại app.
 - Staff gửi token cùng JWT đến endpoint scan hiện có. Mobile chỉ báo thành công khi response có ID đơn và trạng thái Completed.
-- Backend phải phát hành token hạn 7 ngày theo EC04, kiểm tra quyền staff, chống sử dụng lại và đồng thời cập nhật Completed, tiêu thụ token, giải phóng slot trong một transaction. Các thao tác này chưa được triển khai trong repo Flutter này.
+- Backend phải phát hành token hạn 7 ngày tính từ lúc tạo đơn theo luồng đặc tả nhóm (EC04), kiểm tra quyền staff, chống sử dụng lại và đồng thời cập nhật Completed, tiêu thụ token, giải phóng slot trong một transaction. Các thao tác này được triển khai trong `UniPrint-Backend/UniPrint.Business/Services/PrintOrderService.cs`.
 - Chi tiết hợp đồng và tiêu chí tích hợp: [docs/pickup-backend-contract.md](docs/pickup-backend-contract.md).
 
 Có thể cấu hình API khi chạy, không cần sửa source:
