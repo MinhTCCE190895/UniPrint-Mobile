@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -6,8 +6,12 @@ import '../../models/document_model.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/order_provider.dart';
 
+import 'components/upload_document_sheet.dart';
+import 'my_documents_screen.dart';
+
 class CreateOrderScreen extends StatefulWidget {
-  const CreateOrderScreen({super.key});
+  final DocumentModel? initialDocument;
+  const CreateOrderScreen({super.key, this.initialDocument});
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -27,10 +31,22 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDocument != null) {
+      _selectedDoc = widget.initialDocument;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final docProvider = context.read<DocumentProvider>();
       await docProvider.loadDocuments();
-      if (docProvider.documents.isNotEmpty && mounted) {
+      if (!mounted) return;
+
+      if (_selectedDoc != null) {
+        // Find matching document in loaded list if possible
+        final existing = docProvider.documents.where((d) => d.id == _selectedDoc!.id).toList();
+        if (existing.isNotEmpty) {
+          _selectedDoc = existing.first;
+        }
+        _triggerPriceCalculation();
+      } else if (docProvider.documents.isNotEmpty) {
         setState(() {
           _selectedDoc = docProvider.documents.first;
         });
@@ -90,53 +106,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
-  Future<void> _showQuickUploadDialog() async {
-    final fileNameController = TextEditingController(text: 'Bai_Tap_Tuan_3.pdf');
-    final pagesController = TextEditingController(text: '12');
-
-    final created = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Thêm tài liệu mô phỏng'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: fileNameController,
-              decoration: const InputDecoration(labelText: 'Tên file', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: pagesController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Số trang', border: OutlineInputBorder()),
-            ),
-          ],
+  Future<void> _handleUploadDocument() async {
+    final newDoc = await UploadDocumentSheet.show(context);
+    if (newDoc != null && mounted) {
+      setState(() {
+        _selectedDoc = newDoc;
+      });
+      _triggerPriceCalculation();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã chọn tài liệu "${newDoc.fileName}" (${newDoc.pageCount} trang)'),
+          backgroundColor: AppColors.statusCompleted,
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Thêm'),
-          ),
-        ],
-      ),
-    );
-
-    if (created == true && mounted) {
-      final doc = await context.read<DocumentProvider>().uploadMeta(
-        fileName: fileNameController.text.trim(),
-        fileExtension: '.pdf',
-        fileSizeBytes: 1024 * 500,
-        pageCount: int.tryParse(pagesController.text) ?? 1,
       );
-      if (doc != null && mounted) {
-        setState(() {
-          _selectedDoc = doc;
-        });
-        _triggerPriceCalculation();
-      }
     }
   }
 
@@ -152,6 +134,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         title: const Text('Cấu Hình & Đặt In'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.folder_shared_outlined),
+            tooltip: 'Kho tài liệu',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyDocumentsScreen()),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -163,10 +155,22 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('1. Chọn tài liệu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                TextButton.icon(
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Tải lên mới'),
-                  onPressed: _showQuickUploadDialog,
+                Row(
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.folder_open, size: 18),
+                      label: const Text('Quản lý'),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyDocumentsScreen()),
+                      ),
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Tải lên mới'),
+                      onPressed: _handleUploadDocument,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -179,10 +183,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ? ListTile(
                         leading: const Icon(Icons.upload_file, color: AppColors.primary),
                         title: const Text('Chưa có tài liệu nào'),
-                        subtitle: const Text('Nhấn "Tải lên mới" để thêm tài liệu cần in'),
+                        subtitle: const Text('Nhấn "Tải lên mới" để thêm tài liệu PDF/Word cần in'),
                         trailing: ElevatedButton(
-                          onPressed: _showQuickUploadDialog,
-                          child: const Text('Thêm'),
+                          onPressed: _handleUploadDocument,
+                          child: const Text('Tải lên'),
                         ),
                       )
                     : DropdownButtonHideUnderline(

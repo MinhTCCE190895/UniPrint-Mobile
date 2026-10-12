@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -8,6 +8,8 @@ import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'create_order_screen.dart';
 import 'order_qr_screen.dart';
+
+import 'my_documents_screen.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
@@ -107,6 +109,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.folder_shared_outlined),
+            tooltip: 'Kho tài liệu cá nhân',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyDocumentsScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Đăng xuất',
             onPressed: _handleLogout,
@@ -126,14 +136,32 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         const SizedBox(height: 12),
                         const Text('Bạn chưa có đơn in nào', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
                         const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.add),
-                          label: const Text('Tạo đơn in mới'),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
-                          ),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.folder_shared_outlined),
+                              label: const Text('Kho tài liệu'),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const MyDocumentsScreen()),
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.add),
+                              label: const Text('Tạo đơn in mới'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
