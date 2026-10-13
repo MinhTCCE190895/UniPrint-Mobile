@@ -92,12 +92,18 @@ class OrderService {
     return [];
   }
 
-  static Future<void> updateOrderStatus(String id, int newStatus) async {
-    await ApiClient.patch(
+  static Future<String> updateOrderStatus(String id, int newStatus) async {
+    final response = await ApiClient.patch(
       ApiEndpoints.updateOrderStatus(id),
       body: {'newStatus': newStatus},
       withAuth: true,
     );
+    if (response is Map<String, dynamic> &&
+        response.containsKey('message') &&
+        response['message'] != null) {
+      return response['message'] as String;
+    }
+    return 'Cập nhật trạng thái thành công.';
   }
 
   static Future<PrintOrderModel> scanPickupQr(String qrToken) async {

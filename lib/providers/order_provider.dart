@@ -113,15 +113,37 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateStatus(String orderId, int newStatus) async {
+  /// Đơn in đang chờ xử lý in (Pending, Processing, Printing) theo thứ tự FIFO
+  List<PrintOrderModel> get queuePendingOrders => _staffQueue
+      .where((order) =>
+          order.status == OrderStatus.pending ||
+          order.status == OrderStatus.processing ||
+          order.status == OrderStatus.printing)
+      .toList();
+
+  /// Đơn in đã xong (ReadyForPickup, ShelfAssigned) chờ sinh viên nhận
+  List<PrintOrderModel> get queueReadyOrders => _staffQueue
+      .where((order) =>
+          order.status == OrderStatus.readyForPickup ||
+          order.status == OrderStatus.shelfAssigned)
+      .toList();
+
+  Future<({bool success, String message})> updateStatus(
+    String orderId,
+    int newStatus,
+  ) async {
     try {
-      await OrderService.updateOrderStatus(orderId, newStatus);
+      final msg = await OrderService.updateOrderStatus(orderId, newStatus);
       await loadStaffQueue();
-      return true;
+      return (success: true, message: msg);
     } catch (e) {
-      _errorMessage = e.toString();
+      final cleanMsg = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('ApiResponseException: ', '');
+      _errorMessage = cleanMsg;
       notifyListeners();
-      return false;
+      return (success: false, message: cleanMsg);
     }
   }
 
@@ -154,12 +176,21 @@ class OrderProvider extends ChangeNotifier {
   }
 
   Future<bool> cancelOrder(String orderId) async {
+    final order = _myOrders.where((o) => o.id == orderId).firstOrNull;
+    if (order != null && !order.canCancel) {
+      _errorMessage = 'Đơn hàng đang in hoặc đã hoàn tất, không thể hủy (BR02).';
+      notifyListeners();
+      return false;
+    }
     try {
       await OrderService.cancelOrder(orderId);
       await loadMyOrders();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('ApiResponseException: ', '');
       notifyListeners();
       return false;
     }
