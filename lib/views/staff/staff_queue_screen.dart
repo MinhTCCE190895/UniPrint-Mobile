@@ -9,6 +9,7 @@ import '../auth/login_screen.dart';
 import 'components/confirm_status_dialog.dart';
 import 'components/staff_order_card.dart';
 import 'staff_qr_scanner_screen.dart';
+import '../profile/profile_screen.dart';
 
 /// Màn hình quản lý hàng đợi in ấn dành cho nhân viên (Staff Queue)
 /// Hỗ trợ 2 Tab: Đang chờ xử lý in & Đã in xong (Chờ lấy)
@@ -123,6 +124,14 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.account_circle_outlined),
+              tooltip: 'Thông tin cá nhân',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.qr_code_scanner),
               tooltip: 'Quét mã giao tài liệu',

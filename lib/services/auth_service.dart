@@ -1,4 +1,4 @@
-﻿import '../core/constants/api_endpoints.dart';
+import '../core/constants/api_endpoints.dart';
 import '../core/network/api_client.dart';
 import '../models/user_model.dart';
 
@@ -40,5 +40,39 @@ class AuthService {
       return UserModel.fromJson(response['data']);
     }
     return UserModel.fromJson(response);
+  }
+
+  static Future<UserModel> updateProfile({
+    required String fullName,
+    String? phoneNumber,
+  }) async {
+    final response = await ApiClient.put(
+      ApiEndpoints.updateProfile,
+      body: {
+        'fullName': fullName,
+        'phoneNumber': phoneNumber,
+      },
+      withAuth: true,
+    );
+    if (response is Map<String, dynamic> && response.containsKey('data')) {
+      return UserModel.fromJson(response['data']);
+    }
+    return UserModel.fromJson(response);
+  }
+
+  static Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await ApiClient.put(
+      ApiEndpoints.changePassword,
+      body: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+      withAuth: true,
+    );
   }
 }

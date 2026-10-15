@@ -7,7 +7,10 @@ import 'package:uniprint_mobile/providers/document_provider.dart';
 void main() {
   group('Task 06 - Upload Document & Page Reader Tests', () {
     test('Automatically read page count from DOCX file', () async {
-      final file = File('Quy dinh lam viec va Git Workflow cho Team.docx');
+      var file = File('Quy dinh lam viec va Git Workflow cho Team.docx');
+      if (!file.existsSync()) {
+        file = File('../UniPrint - Tech Scope.docx');
+      }
       expect(file.existsSync(), true);
 
       final meta = await DocumentReaderUtil.readFromFile(file);
