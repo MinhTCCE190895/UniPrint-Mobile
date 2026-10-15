@@ -51,6 +51,20 @@ class ApiClient {
     }
   }
 
+  static Future<dynamic> put(String url, {Map<String, dynamic>? body, bool withAuth = true}) async {
+    try {
+      final headers = await _getHeaders(withAuth: withAuth);
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      );
+      return _processResponse(response);
+    } on SocketException {
+      throw ApiResponseException('Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc backend.');
+    }
+  }
+
   static Future<dynamic> patch(String url, {Map<String, dynamic>? body, bool withAuth = true}) async {
     try {
       final headers = await _getHeaders(withAuth: withAuth);

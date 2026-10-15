@@ -1,4 +1,4 @@
-﻿class ApiEndpoints {
+class ApiEndpoints {
   // Use http://10.0.2.2:5045 for Android Emulator
   // Use http://localhost:5045 for Windows Desktop
   // Use your LAN IP (e.g., http://192.168.1.x:5045) for physical Android devices
@@ -11,6 +11,8 @@
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/register';
   static const String profile = '$baseUrl/auth/me';
+  static const String updateProfile = '$baseUrl/auth/profile';
+  static const String changePassword = '$baseUrl/auth/change-password';
 
   // Document endpoints
   static const String documents = '$baseUrl/documents';

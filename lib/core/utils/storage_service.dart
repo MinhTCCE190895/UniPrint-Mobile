@@ -1,4 +1,4 @@
-﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
   static const String _keyToken = 'jwt_access_token';
@@ -41,6 +41,11 @@ class StorageService {
       'email': prefs.getString(_keyUserEmail),
       'role': prefs.getInt(_keyUserRole),
     };
+  }
+
+  static Future<void> updateUserName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyUserName, name);
   }
 
   static Future<void> clearSession() async {
