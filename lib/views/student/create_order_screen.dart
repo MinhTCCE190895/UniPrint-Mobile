@@ -26,6 +26,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   bool _isDoubleSided = false;
   bool _hasBinding = false;
   bool _hasStaple = false;
+  bool _isCalculating = false;
   final String _notes = '';
 
   @override
@@ -55,9 +56,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     });
   }
 
-  void _triggerPriceCalculation() {
+  Future<void> _triggerPriceCalculation() async {
     if (_selectedDoc == null) return;
-    context.read<OrderProvider>().calculatePriceRealtime(
+    setState(() => _isCalculating = true);
+    await context.read<OrderProvider>().calculatePriceRealtime(
       pageCount: _selectedDoc!.pageCount,
       numberOfCopies: _copies,
       isColor: _isColor,
@@ -65,6 +67,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       hasBinding: _hasBinding,
       hasStaple: _hasStaple,
     );
+    if (mounted) setState(() => _isCalculating = false);
   }
 
   Future<void> _handleCreateOrder() async {
@@ -284,46 +287,67 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Section 3: Price Preview
-            const Text('3. Dự tính chi phí (Realtime)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            // Section 3: Price Preview — Task 8: Tính giá realtime
+            Row(
+              children: [
+                const Text('3. Dự tính chi phí', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                if (_isCalculating) ...[
+                  const SizedBox(width: 10),
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  ),
+                ],
+              ],
+            ),
             const SizedBox(height: 8),
             Card(
               color: AppColors.primary.withValues(alpha: 0.04),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.primaryLight, width: 1.2),
+                side: BorderSide(
+                  color: _isCalculating ? AppColors.primary.withValues(alpha: 0.3) : AppColors.primaryLight,
+                  width: 1.2,
+                ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Đơn giá mỗi trang:', style: TextStyle(color: AppColors.textSecondary)),
-                        Text(_currencyFormat.format(estimatedPrice?.unitPricePerPage ?? 500)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Phí dịch vụ gia công:', style: TextStyle(color: AppColors.textSecondary)),
-                        Text(_currencyFormat.format(estimatedPrice?.extraServicesTotal ?? 0)),
-                      ],
-                    ),
-                    const Divider(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('TỔNG TIỀN DỰ KIẾN:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                        Text(
-                          _currencyFormat.format(estimatedPrice?.totalEstimatedPrice ?? 0),
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.secondary),
-                        ),
-                      ],
-                    ),
-                  ],
+              child: AnimatedOpacity(
+                opacity: _isCalculating ? 0.5 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      _priceRow(
+                        label: 'Đơn giá mỗi trang:',
+                        value: estimatedPrice?.unitPricePerPage,
+                        fallback: 0,
+                      ),
+                      const SizedBox(height: 6),
+                      _priceRow(
+                        label: 'Tiền trang in (${_selectedDoc?.pageCount ?? 0}tr × $_copies bản):',
+                        value: estimatedPrice?.pageSubtotal,
+                        fallback: 0,
+                      ),
+                      const SizedBox(height: 6),
+                      _priceRow(
+                        label: 'Phí gia công (gáy/ghim):',
+                        value: estimatedPrice?.extraServicesTotal,
+                        fallback: 0,
+                      ),
+                      const Divider(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('TỔNG DỰ KIẾN:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          Text(
+                            _currencyFormat.format(estimatedPrice?.totalEstimatedPrice ?? 0),
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -348,6 +372,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _priceRow({required String label, double? value, double fallback = 0}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+        ),
+        Text(_currencyFormat.format(value ?? fallback)),
+      ],
     );
   }
 }

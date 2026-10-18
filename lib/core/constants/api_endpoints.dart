@@ -1,4 +1,4 @@
-﻿class ApiEndpoints {
+class ApiEndpoints {
   // Use http://10.0.2.2:5045 for Android Emulator
   // Use http://localhost:5045 for Windows Desktop
   // Use your LAN IP (e.g., http://192.168.1.x:5045) for physical Android devices
@@ -19,7 +19,7 @@
 
   // Print Order endpoints
   static const String printOrders = '$baseUrl/printorders';
-  static const String calculatePrice = '$baseUrl/printorders/calculate-price';
+  static const String calculatePrice = '$baseUrl/price/calculate';
   static const String myOrders = '$baseUrl/printorders/my-orders';
   static const String staffQueue = '$baseUrl/printorders/queue';
   static const String scanPickupQr = '$baseUrl/printorders/scan-pickup-qr';
