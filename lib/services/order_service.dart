@@ -21,7 +21,7 @@ class OrderService {
         'hasBinding': hasBinding,
         'hasStaple': hasStaple,
       },
-      withAuth: false,
+      withAuth: true,
     );
 
     final data =
