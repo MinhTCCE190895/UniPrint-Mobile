@@ -47,12 +47,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
 
     if (confirm == true && mounted) {
-      final success = await context.read<OrderProvider>().cancelOrder(orderId);
+      final orderProvider = context.read<OrderProvider>();
+      final success = await orderProvider.cancelOrder(orderId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Đã hủy đơn thành công' : 'Không thể hủy đơn'),
-            backgroundColor: success ? AppColors.statusCompleted : AppColors.statusCancelled,
+            content: Text(success
+                ? 'Đã hủy đơn thành công'
+                : (orderProvider.errorMessage ?? 'Không thể hủy đơn')),
+            backgroundColor: success
+                ? AppColors.statusCompleted
+                : AppColors.statusCancelled,
           ),
         );
       }
@@ -247,6 +252,27 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                           style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusCancelled),
                                           onPressed: () => _handleCancel(order.id),
                                           child: const Text('Hủy', style: TextStyle(fontSize: 12)),
+                                        ),
+                                      ] else if (order.status == OrderStatus.printing) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.statusPrinting.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: AppColors.statusPrinting.withValues(alpha: 0.4)),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.lock_outline, size: 13, color: AppColors.statusPrinting),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'Đang in, không thể hủy',
+                                                style: TextStyle(fontSize: 11, color: AppColors.statusPrinting, fontWeight: FontWeight.w600),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ],

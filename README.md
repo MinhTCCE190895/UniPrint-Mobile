@@ -1,4 +1,4 @@
-﻿# UniPrint Mobile - Ứng Dụng Di Động Quản Lý & Đặt In Thông Minh (PRM393)
+# UniPrint Mobile - Ứng Dụng Di Động Quản Lý & Đặt In Thông Minh (PRM393)
 
 Ứng dụng Flutter dành cho sinh viên và nhân viên quầy in thuộc hệ sinh thái **UniPrint**, được xây dựng dựa trên chuẩn giáo trình **PRM393 (Mobile Programming with Flutter)**.
 
@@ -65,9 +65,9 @@ uniprint_mobile/
 
 ### 1. Cấu hình địa chỉ IP Backend
 Mở file `lib/core/constants/api_endpoints.dart`:
-- Nếu chạy **Android Emulator**: giữ nguyên `http://10.0.2.2:5000/api`
-- Nếu chạy **Windows Desktop**: đổi thành `http://localhost:5000/api`
-- Nếu chạy **Điện thoại thật**: đổi thành `http://<IP_MÁY_TÍNH_TRONG_LAN>:5000/api`
+- Nếu chạy **Android Emulator**: giữ nguyên `http://10.0.2.2:5045/api`
+- Nếu chạy **Windows Desktop**: đổi thành `http://localhost:5045/api`
+- Nếu chạy **Điện thoại thật**: đổi thành `http://<IP_MÁY_TÍNH_TRONG_LAN>:5045/api`
 
 ### 2. Cài đặt dependencies và chạy
 ```bash
@@ -76,5 +76,35 @@ flutter run
 ```
 
 ### 3. Tài khoản demo có sẵn (có nút bấm nhanh ở màn hình Login):
-- **Sinh viên**: `student@fpt.edu.vn` / `Student@123`
-- **Nhân viên (Staff)**: `staff@fpt.edu.vn` / `Staff@123`
+- **Sinh viên**: `student@uniprint.edu.vn` / `123456`
+- **Nhân viên (Staff)**: `staff@uniprint.edu.vn` / `123456`
+
+## Task 16 & 17 — Pickup QR
+
+Giữ nguyên luồng `views → providers → services → core/network`. Mobile hiển thị QR bằng `qr_flutter` và staff quét bằng `mobile_scanner` hoặc nhập token thủ công.
+
+- QR dùng token từ API, không dùng ID đơn thay thế. API cần trả `qrExpiresAt` theo ISO 8601 có múi giờ.
+- Chỉ hiển thị mã cho đơn ReadyForPickup còn hạn. Mã bị ẩn ngay tại thời điểm hết hạn; dữ liệu được tải lại khi mở màn hình hoặc quay lại app.
+- Staff gửi token cùng JWT đến endpoint scan hiện có. Mobile chỉ báo thành công khi response có ID đơn và trạng thái Completed.
+- Backend phải phát hành token hạn 7 ngày tính từ lúc tạo đơn theo luồng đặc tả nhóm (EC04), kiểm tra quyền staff, chống sử dụng lại và đồng thời cập nhật Completed, tiêu thụ token, giải phóng slot trong một transaction. Các thao tác này được triển khai trong `UniPrint-Backend/UniPrint.Business/Services/PrintOrderService.cs`.
+- Chi tiết hợp đồng và tiêu chí tích hợp: [docs/pickup-backend-contract.md](docs/pickup-backend-contract.md).
+
+Có thể cấu hình API khi chạy, không cần sửa source:
+
+```sh
+# Windows
+flutter run --dart-define=API_BASE_URL=http://localhost:5045/api
+# Android Emulator
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5045/api
+```
+
+Cổng 5045 là mặc định hiện tại trong source. Thay bằng cổng API thực tế nếu khác. Điện thoại thật dùng IP LAN của máy chạy API. Backend phải chạy riêng; `flutter run` chỉ khởi động mobile.
+
+Kiểm tra tự động:
+
+```sh
+dart analyze
+flutter test --no-pub
+```
+
+Cần kiểm thử thực tế với backend và thiết bị để xác nhận camera, phân quyền, token hết hạn, quét trùng, quét đồng thời và giải phóng slot. Tài khoản demo trong README cần tồn tại trong backend đang chạy.

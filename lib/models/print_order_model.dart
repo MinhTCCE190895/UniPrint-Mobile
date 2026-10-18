@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
 import '../core/constants/app_colors.dart';
 
 enum OrderStatus {
@@ -35,6 +36,7 @@ class PrintOrderModel {
   final OrderStatus status;
   final String? shelfCode;
   final String? qrToken;
+  final DateTime? qrExpiresAt;
   final int paymentStatus; // 0: Pending, 1: Paid, 2: Failed
   final DateTime createdAt;
 
@@ -50,11 +52,19 @@ class PrintOrderModel {
     required this.status,
     this.shelfCode,
     this.qrToken,
+    this.qrExpiresAt,
     required this.paymentStatus,
     required this.createdAt,
   });
 
-  bool get canCancel => status == OrderStatus.pending || status == OrderStatus.processing;
+  bool get canCancel =>
+      status == OrderStatus.pending || status == OrderStatus.processing;
+
+  bool canShowPickupQrAt(DateTime now) =>
+      status == OrderStatus.readyForPickup &&
+      (qrToken?.trim().isNotEmpty ?? false) &&
+      qrExpiresAt != null &&
+      now.toUtc().isBefore(qrExpiresAt!);
 
   factory PrintOrderModel.fromJson(Map<String, dynamic> json) {
     return PrintOrderModel(
@@ -65,10 +75,14 @@ class PrintOrderModel {
       numberOfCopies: json['numberOfCopies'] ?? 1,
       isColor: json['isColor'] ?? false,
       isDoubleSided: json['isDoubleSided'] ?? false,
-      totalPrice: (json['totalPrice'] is num) ? (json['totalPrice'] as num).toDouble() : 0.0,
+      totalPrice: (json['totalPrice'] is num)
+          ? (json['totalPrice'] as num).toDouble()
+          : 0.0,
       status: OrderStatus.fromValue(json['status'] is int ? json['status'] : 1),
       shelfCode: json['shelfCode'],
       qrToken: json['qrToken'],
+      qrExpiresAt: DateTime.tryParse(json['qrExpiresAt']?.toString() ?? '')
+          ?.toUtc(),
       paymentStatus: json['paymentStatus'] is int ? json['paymentStatus'] : 0,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -94,8 +108,10 @@ class PriceCalculationResult {
     return PriceCalculationResult(
       unitPricePerPage: (json['unitPricePerPage'] as num?)?.toDouble() ?? 0.0,
       pageSubtotal: (json['pageSubtotal'] as num?)?.toDouble() ?? 0.0,
-      extraServicesTotal: (json['extraServicesTotal'] as num?)?.toDouble() ?? 0.0,
-      totalEstimatedPrice: (json['totalEstimatedPrice'] as num?)?.toDouble() ?? 0.0,
+      extraServicesTotal:
+          (json['extraServicesTotal'] as num?)?.toDouble() ?? 0.0,
+      totalEstimatedPrice:
+          (json['totalEstimatedPrice'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

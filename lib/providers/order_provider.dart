@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
 import '../models/print_order_model.dart';
 import '../services/order_service.dart';
 
@@ -7,6 +8,7 @@ class OrderProvider extends ChangeNotifier {
   List<PrintOrderModel> _staffQueue = [];
   PriceCalculationResult? _estimatedPrice;
   bool _isLoading = false;
+  bool _isVerifyingPickup = false;
   String? _errorMessage;
 
   List<PrintOrderModel> get myOrders => _myOrders;
@@ -14,6 +16,14 @@ class OrderProvider extends ChangeNotifier {
   PriceCalculationResult? get estimatedPrice => _estimatedPrice;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  Future<PrintOrderModel> loadPickupOrder(String id) async {
+    final orders = await OrderService.getMyOrders();
+    final order = orders.firstWhere((order) => order.id == id);
+    _myOrders = orders;
+    notifyListeners();
+    return order;
+  }
 
   Future<void> loadMyOrders() async {
     _isLoading = true;
@@ -103,42 +113,84 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateStatus(String orderId, int newStatus) async {
+  /// Đơn in đang chờ xử lý in (Pending, Processing, Printing) theo thứ tự FIFO
+  List<PrintOrderModel> get queuePendingOrders => _staffQueue
+      .where((order) =>
+          order.status == OrderStatus.pending ||
+          order.status == OrderStatus.processing ||
+          order.status == OrderStatus.printing)
+      .toList();
+
+  /// Đơn in đã xong (ReadyForPickup, ShelfAssigned) chờ sinh viên nhận
+  List<PrintOrderModel> get queueReadyOrders => _staffQueue
+      .where((order) =>
+          order.status == OrderStatus.readyForPickup ||
+          order.status == OrderStatus.shelfAssigned)
+      .toList();
+
+  Future<({bool success, String message})> updateStatus(
+    String orderId,
+    int newStatus,
+  ) async {
     try {
-      await OrderService.updateOrderStatus(orderId, newStatus);
+      final msg = await OrderService.updateOrderStatus(orderId, newStatus);
       await loadStaffQueue();
-      return true;
+      return (success: true, message: msg);
     } catch (e) {
-      _errorMessage = e.toString();
+      final cleanMsg = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('ApiResponseException: ', '');
+      _errorMessage = cleanMsg;
       notifyListeners();
-      return false;
+      return (success: false, message: cleanMsg);
     }
   }
 
   Future<PrintOrderModel?> verifyPickup(String qrToken) async {
+    if (_isVerifyingPickup) return null;
+    _isVerifyingPickup = true;
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
       final res = await OrderService.scanPickupQr(qrToken);
-      await loadStaffQueue();
-      _isLoading = false;
-      notifyListeners();
+      _staffQueue.removeWhere((order) => order.id == res.id);
+      final index = _myOrders.indexWhere((order) => order.id == res.id);
+      if (index >= 0) _myOrders[index] = res;
+      try {
+        _staffQueue = await OrderService.getStaffQueue();
+      } catch (_) {
+        _errorMessage =
+            'Đã hoàn tất nhận tài liệu nhưng chưa tải lại được hàng đợi.';
+      }
       return res;
     } catch (e) {
       _errorMessage = e.toString();
+      return null;
+    } finally {
+      _isVerifyingPickup = false;
       _isLoading = false;
       notifyListeners();
-      return null;
     }
   }
 
   Future<bool> cancelOrder(String orderId) async {
+    final order = _myOrders.where((o) => o.id == orderId).firstOrNull;
+    if (order != null && !order.canCancel) {
+      _errorMessage = 'Đơn hàng đang in hoặc đã hoàn tất, không thể hủy (BR02).';
+      notifyListeners();
+      return false;
+    }
     try {
       await OrderService.cancelOrder(orderId);
       await loadMyOrders();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('ApiResponseException: ', '');
       notifyListeners();
       return false;
     }
