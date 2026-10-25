@@ -14,12 +14,14 @@ class StaffOrderCard extends StatelessWidget {
     String actionTitle,
     String actionDescription,
   ) onStatusChange;
+  final void Function(PrintOrderModel order)? onAssignShelf;
 
   const StaffOrderCard({
     super.key,
     required this.order,
     required this.queueIndex,
     required this.onStatusChange,
+    this.onAssignShelf,
   });
 
   static final _currencyFormat =
@@ -246,40 +248,94 @@ class StaffOrderCard extends StatelessWidget {
               ),
             ),
             ElevatedButton.icon(
-              icon: const Icon(Icons.check_circle_outline, size: 14),
-              label: const Text('Đã in xong', style: TextStyle(fontSize: 12)),
+              icon: Icon(
+                onAssignShelf != null
+                    ? Icons.shelves
+                    : Icons.check_circle_outline,
+                size: 14,
+              ),
+              label: Text(
+                onAssignShelf != null ? 'In xong & Xếp kệ' : 'Đã in xong',
+                style: const TextStyle(fontSize: 12),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.statusReady,
                 foregroundColor: Colors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               ),
-              onPressed: () => onStatusChange(
-                order,
-                OrderStatus.readyForPickup.value,
-                'Hoàn tất in ấn',
-                'Xác nhận tài liệu đã in xong và sẵn sàng cho sinh viên nhận?',
-              ),
+              onPressed: () {
+                if (onAssignShelf != null) {
+                  onAssignShelf!(order);
+                } else {
+                  onStatusChange(
+                    order,
+                    OrderStatus.readyForPickup.value,
+                    'Hoàn tất in ấn',
+                    'Xác nhận tài liệu đã in xong và sẵn sàng cho sinh viên nhận?',
+                  );
+                }
+              },
             ),
           ],
         );
 
       case OrderStatus.readyForPickup:
       case OrderStatus.shelfAssigned:
+        if (order.shelfCode == null && onAssignShelf != null) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.statusReady.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle,
+                        size: 16, color: AppColors.statusReady),
+                    SizedBox(width: 6),
+                    Text(
+                      'Đã in xong • Chưa có kệ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.statusReady,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.shelves, size: 14),
+                label: const Text('Xếp kệ', style: TextStyle(fontSize: 12)),
+                onPressed: () => onAssignShelf!(order),
+              ),
+            ],
+          );
+        }
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.statusReady.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, size: 16, color: AppColors.statusReady),
-              SizedBox(width: 6),
+              const Icon(Icons.check_circle,
+                  size: 16, color: AppColors.statusReady),
+              const SizedBox(width: 6),
               Text(
-                'Đã in xong • Chờ sinh viên quét QR nhận',
-                style: TextStyle(
+                order.shelfCode != null
+                    ? 'Đã xếp kệ ${order.shelfCode} • Chờ sinh viên quét QR nhận'
+                    : 'Đã in xong • Chờ sinh viên quét QR nhận',
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.statusReady,

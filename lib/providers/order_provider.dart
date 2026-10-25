@@ -147,6 +147,25 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<({bool success, String message})> assignShelf(
+    String orderId,
+    String shelfId,
+  ) async {
+    try {
+      final msg = await OrderService.assignShelf(orderId, shelfId);
+      await loadStaffQueue();
+      return (success: true, message: msg);
+    } catch (e) {
+      final cleanMsg = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('ApiResponseException: ', '');
+      _errorMessage = cleanMsg;
+      notifyListeners();
+      return (success: false, message: cleanMsg);
+    }
+  }
+
   Future<PrintOrderModel?> verifyPickup(String qrToken) async {
     if (_isVerifyingPickup) return null;
     _isVerifyingPickup = true;

@@ -32,4 +32,9 @@ class ApiEndpoints {
   static String assignShelf(String id) =>
       '$baseUrl/printorders/$id/assign-shelf';
   static String cancelOrder(String id) => '$baseUrl/printorders/$id/cancel';
+
+  // Shelves endpoints
+  static const String shelves = '$baseUrl/shelves';
+  static const String availableShelves = '$baseUrl/shelves/available';
+  static String shelfById(String id) => '$baseUrl/shelves/$id';
 }

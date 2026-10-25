@@ -6,9 +6,11 @@ import '../../models/print_order_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
+import 'components/assign_shelf_dialog.dart';
 import 'components/confirm_status_dialog.dart';
 import 'components/staff_order_card.dart';
 import 'staff_qr_scanner_screen.dart';
+import 'staff_shelves_screen.dart';
 import '../profile/profile_screen.dart';
 
 /// Màn hình quản lý hàng đợi in ấn dành cho nhân viên (Staff Queue)
@@ -57,6 +59,17 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
             ),
           );
         }
+      },
+    );
+  }
+
+  /// Mở hộp thoại gán đơn vào kệ lưu trữ
+  void _onAssignShelf(PrintOrderModel order) {
+    AssignShelfDialog.show(
+      context: context,
+      order: order,
+      onAssigned: () {
+        context.read<OrderProvider>().loadStaffQueue();
       },
     );
   }
@@ -124,6 +137,14 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.shelves),
+              tooltip: 'Quản lý kệ lưu trữ',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StaffShelvesScreen()),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.account_circle_outlined),
               tooltip: 'Thông tin cá nhân',
@@ -275,6 +296,7 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                       order: order,
                       queueIndex: index + 1,
                       onStatusChange: _onStatusChange,
+                      onAssignShelf: _onAssignShelf,
                     );
                   },
                 ),
