@@ -178,7 +178,7 @@ class OrderProvider extends ChangeNotifier {
   Future<bool> cancelOrder(String orderId) async {
     final order = _myOrders.where((o) => o.id == orderId).firstOrNull;
     if (order != null && !order.canCancel) {
-      _errorMessage = 'Đơn hàng đang in hoặc đã hoàn tất, không thể hủy (BR02).';
+      _errorMessage = 'Đơn hàng đang in hoặc đã hoàn tất, không thể hủy.';
       notifyListeners();
       return false;
     }
