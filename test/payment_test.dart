@@ -68,6 +68,14 @@ void main() {
       );
     });
 
+    test('Paid orders cannot be cancelled by student', () {
+      expect(PrintOrderModel.fromJson({'status': 1}).canCancel, isTrue);
+      expect(
+        PrintOrderModel.fromJson({'status': 1, 'paymentStatus': 2}).canCancel,
+        isFalse,
+      );
+    });
+
     test('VietQR is only shown for unpaid VietQR invoices with payload', () {
       expect(PaymentModel.fromJson(paymentJson(method: 2)).canShowVietQr, isTrue);
       expect(PaymentModel.fromJson(paymentJson(method: 1)).canShowVietQr, isFalse);
