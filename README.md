@@ -120,3 +120,9 @@ Cần kiểm thử thực tế với backend và thiết bị để xác nhận 
 - Chạm vào thẻ đơn ở màn hình chính để mở `OrderTrackingScreen` (gọi `GET /api/printorders/{id}/tracking`).
 - Hiển thị: mã đơn, trạng thái, tiến trình (timeline), vị trí kệ nhận hàng, mã QR nhận tài liệu (chỉ khi server cho phép và còn hạn, tự ẩn khi hết hạn), chi tiết cấu hình in/giá đã chốt và hóa đơn thanh toán (dùng lại phần thanh toán Task 18).
 - Thời gian server không kèm múi giờ được hiểu là UTC (`core/utils/server_date.dart`).
+
+## Task 20 — Cấu hình bảng giá (Admin)
+
+- Đăng nhập Admin → màn hình hàng đợi có nút **Cấu hình bảng giá** (icon giá) mở `PriceConfigScreen`.
+- Sửa giá trang đen trắng, màu, chiết khấu 2 mặt, phí gáy, phí ghim; kiểm tra hợp lệ giống backend, xem trước giá cho tài liệu 10 trang và lịch sử các phiên bản.
+- API: `GET /api/price/config`, `PUT /api/price/config` (Admin), `GET /api/price/config/history`.
