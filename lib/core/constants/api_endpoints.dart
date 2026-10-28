@@ -22,6 +22,8 @@ class ApiEndpoints {
   // Print Order endpoints
   static const String printOrders = '$baseUrl/printorders';
   static const String calculatePrice = '$baseUrl/price/calculate';
+  static const String priceConfig = '$baseUrl/price/config'; // Task 20
+  static const String priceConfigHistory = '$baseUrl/price/config/history';
   static const String myOrders = '$baseUrl/printorders/my-orders';
   static const String staffQueue = '$baseUrl/printorders/queue';
   static const String scanPickupQr = '$baseUrl/printorders/scan-pickup-qr';
