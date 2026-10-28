@@ -8,8 +8,8 @@ import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'create_order_screen.dart';
 import 'order_qr_screen.dart';
-
 import 'my_documents_screen.dart';
+import '../profile/profile_screen.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
@@ -113,6 +113,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: 'Thông tin cá nhân',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.folder_shared_outlined),
             tooltip: 'Kho tài liệu cá nhân',

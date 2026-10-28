@@ -11,6 +11,8 @@ class ApiEndpoints {
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/register';
   static const String profile = '$baseUrl/auth/me';
+  static const String updateProfile = '$baseUrl/auth/profile';
+  static const String changePassword = '$baseUrl/auth/change-password';
 
   // Document endpoints
   static const String documents = '$baseUrl/documents';
