@@ -16,12 +16,16 @@ class StaffOrderCard extends StatelessWidget {
   ) onStatusChange;
   final void Function(PrintOrderModel order)? onAssignShelf;
 
+  /// Task 18: Thu tiền mặt / xác nhận chuyển khoản cho đơn chưa thanh toán.
+  final void Function(PrintOrderModel order)? onConfirmPayment;
+
   const StaffOrderCard({
     super.key,
     required this.order,
     required this.queueIndex,
     required this.onStatusChange,
     this.onAssignShelf,
+    this.onConfirmPayment,
   });
 
   static final _currencyFormat =
@@ -127,6 +131,9 @@ class StaffOrderCard extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(height: 6),
+            _buildPaymentBadge(),
+
             if (order.shelfCode != null) ...[
               const SizedBox(height: 6),
               Container(
@@ -161,6 +168,31 @@ class StaffOrderCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Task 18: Hiển thị trạng thái thanh toán của đơn.
+  Widget _buildPaymentBadge() {
+    final status = order.paymentStatusType;
+    return Row(
+      children: [
+        Icon(
+          order.isPaid ? Icons.verified_outlined : Icons.account_balance_wallet_outlined,
+          size: 14,
+          color: status.color,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          order.isPaid
+              ? status.label
+              : '${status.label} • ${order.paymentMethodType.label}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: status.color,
+          ),
+        ),
+      ],
     );
   }
 
@@ -314,6 +346,34 @@ class StaffOrderCard extends StatelessWidget {
                 icon: const Icon(Icons.shelves, size: 14),
                 label: const Text('Xếp kệ', style: TextStyle(fontSize: 12)),
                 onPressed: () => onAssignShelf!(order),
+              ),
+            ],
+          );
+        }
+        if (!order.isPaid && onConfirmPayment != null) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Đã in xong • Thu tiền khi sinh viên đến nhận',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.statusReady,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.point_of_sale, size: 14),
+                label: const Text('Thu tiền', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.statusCompleted,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                ),
+                onPressed: () => onConfirmPayment!(order),
               ),
             ],
           );

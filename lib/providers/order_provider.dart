@@ -83,7 +83,7 @@ class OrderProvider extends ChangeNotifier {
     required bool isDoubleSided,
     required bool hasBinding,
     required bool hasStaple,
-    int paymentMethod = 0,
+    int paymentMethod = 1, // 1: Cash, 2: VietQR (Task 18)
     String? notes,
   }) async {
     _isLoading = true;
