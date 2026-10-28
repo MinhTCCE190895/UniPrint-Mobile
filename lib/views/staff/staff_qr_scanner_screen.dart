@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
+import 'components/confirm_payment_dialog.dart';
 
 class StaffQrScannerScreen extends StatefulWidget {
   const StaffQrScannerScreen({super.key});
@@ -72,7 +73,7 @@ class _StaffQrScannerScreenState extends State<StaffQrScannerScreen>
     if (!mounted) return;
 
     if (completedOrder != null) {
-      await showDialog(
+      final action = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Row(
@@ -97,9 +98,23 @@ class _StaffQrScannerScreenState extends State<StaffQrScannerScreen>
                 'Đơn hàng đã được đổi sang trạng thái HOÀN THÀNH (Completed).',
                 style: TextStyle(color: AppColors.statusCompleted),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Thanh toán: ${completedOrder.paymentStatusType.label} • ${completedOrder.paymentMethodType.label}',
+                style: TextStyle(
+                  color: completedOrder.paymentStatusType.color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           actions: [
+            if (!completedOrder.isPaid)
+              TextButton.icon(
+                icon: const Icon(Icons.point_of_sale),
+                label: const Text('Thu tiền'),
+                onPressed: () => Navigator.pop(ctx, 'pay'),
+              ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -109,6 +124,18 @@ class _StaffQrScannerScreenState extends State<StaffQrScannerScreen>
           ],
         ),
       );
+      // Task 18: Thu tiền mặt / xác nhận chuyển khoản ngay khi giao tài liệu.
+      if (action == 'pay' && mounted) {
+        final payment = await ConfirmPaymentDialog.show(context, completedOrder);
+        if (payment != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${completedOrder.orderCode}: ${payment.status.label}'),
+              backgroundColor: AppColors.statusCompleted,
+            ),
+          );
+        }
+      }
       if (mounted) Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'providers/document_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/shelf_provider.dart';
+import 'providers/payment_provider.dart';
 import 'views/splash_screen.dart';
 
 void main() {
@@ -23,6 +24,7 @@ class UniPrintApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DocumentProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => ShelfProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
       ],
       child: MaterialApp(
         title: 'UniPrint Mobile',
