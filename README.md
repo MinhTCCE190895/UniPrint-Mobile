@@ -114,3 +114,9 @@ Cần kiểm thử thực tế với backend và thiết bị để xác nhận 
 - Sinh viên: bấm **Thanh toán** trên thẻ đơn để xem hóa đơn, chọn *Tiền mặt khi nhận* hoặc *Chuyển khoản VietQR*. Mã VietQR được app tự vẽ từ `vietQr.qrPayload` (chuẩn NAPAS) kèm số tài khoản và nội dung chuyển khoản có nút sao chép.
 - Staff: đơn đã in xong mà chưa thanh toán có nút **Thu tiền** trong hàng đợi; sau khi quét QR giao tài liệu thành công cũng có nút **Thu tiền**. Chuyển khoản bắt buộc nhập mã giao dịch ngân hàng.
 - Đã sửa giá trị `paymentMethod` mặc định khi tạo đơn thành `1` (Cash) và mapping `paymentStatus` theo enum backend (1 Pending, 2 Paid, 3 Failed, 4 Refunded).
+
+## Task 19 — Theo dõi chi tiết đơn
+
+- Chạm vào thẻ đơn ở màn hình chính để mở `OrderTrackingScreen` (gọi `GET /api/printorders/{id}/tracking`).
+- Hiển thị: mã đơn, trạng thái, tiến trình (timeline), vị trí kệ nhận hàng, mã QR nhận tài liệu (chỉ khi server cho phép và còn hạn, tự ẩn khi hết hạn), chi tiết cấu hình in/giá đã chốt và hóa đơn thanh toán (dùng lại phần thanh toán Task 18).
+- Thời gian server không kèm múi giờ được hiểu là UTC (`core/utils/server_date.dart`).
