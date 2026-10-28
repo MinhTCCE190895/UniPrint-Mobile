@@ -67,7 +67,8 @@ class PrintOrderModel {
   bool get isPaid => paymentStatusType == PaymentStatusType.paid;
 
   bool get canCancel =>
-      status == OrderStatus.pending || status == OrderStatus.processing;
+      (status == OrderStatus.pending || status == OrderStatus.processing) &&
+      !isPaid; // Task 18: đơn đã thanh toán cần liên hệ quầy để hoàn tiền
 
   bool canShowPickupQrAt(DateTime now) =>
       status == OrderStatus.readyForPickup &&
