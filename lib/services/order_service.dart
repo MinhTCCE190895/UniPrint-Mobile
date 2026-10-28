@@ -128,6 +128,20 @@ class OrderService {
     return order;
   }
 
+  static Future<String> assignShelf(String id, String shelfId) async {
+    final response = await ApiClient.post(
+      ApiEndpoints.assignShelf(id),
+      body: {'shelfId': shelfId},
+      withAuth: true,
+    );
+    if (response is Map<String, dynamic> &&
+        response.containsKey('message') &&
+        response['message'] != null) {
+      return response['message'] as String;
+    }
+    return 'Đã gán đơn hàng vào kệ thành công.';
+  }
+
   static Future<void> cancelOrder(String id) async {
     await ApiClient.post(ApiEndpoints.cancelOrder(id), withAuth: true);
   }
