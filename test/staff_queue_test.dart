@@ -110,9 +110,9 @@ void main() {
         ),
       );
 
-      // Expect BR02 warning message
+      // Expect warning message
       expect(
-        find.textContaining('Ràng buộc BR02: Khi bắt đầu in, hệ thống sẽ khóa quyền hủy đơn của sinh viên.'),
+        find.textContaining('Khi bắt đầu in, hệ thống sẽ khóa quyền hủy đơn của sinh viên.'),
         findsOneWidget,
       );
       expect(find.text('Xác nhận'), findsOneWidget);

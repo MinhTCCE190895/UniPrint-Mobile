@@ -150,7 +150,7 @@ class _ConfirmStatusDialogState extends State<ConfirmStatusDialog> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Ràng buộc BR02: Khi bắt đầu in, hệ thống sẽ khóa quyền hủy đơn của sinh viên.',
+                      'Khi bắt đầu in, hệ thống sẽ khóa quyền hủy đơn của sinh viên.',
                       style: TextStyle(fontSize: 12, color: Colors.amber.shade900, fontWeight: FontWeight.w500),
                     ),
                   ),

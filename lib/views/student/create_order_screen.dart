@@ -8,6 +8,7 @@ import '../../providers/order_provider.dart';
 
 import 'components/upload_document_sheet.dart';
 import 'my_documents_screen.dart';
+import 'order_confirmation_screen.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final DocumentModel? initialDocument;
@@ -18,7 +19,9 @@ class CreateOrderScreen extends StatefulWidget {
 }
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
-  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+  final _currencyFormat =
+      NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+  final _notesController = TextEditingController();
 
   DocumentModel? _selectedDoc;
   int _copies = 1;
@@ -27,7 +30,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   bool _hasBinding = false;
   bool _hasStaple = false;
   bool _isCalculating = false;
-  final String _notes = '';
 
   @override
   void initState() {
@@ -41,8 +43,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       if (!mounted) return;
 
       if (_selectedDoc != null) {
-        // Find matching document in loaded list if possible
-        final existing = docProvider.documents.where((d) => d.id == _selectedDoc!.id).toList();
+        final existing = docProvider.documents
+            .where((d) => d.id == _selectedDoc!.id)
+            .toList();
         if (existing.isNotEmpty) {
           _selectedDoc = existing.first;
         }
@@ -56,21 +59,29 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
   Future<void> _triggerPriceCalculation() async {
     if (_selectedDoc == null) return;
     setState(() => _isCalculating = true);
     await context.read<OrderProvider>().calculatePriceRealtime(
-      pageCount: _selectedDoc!.pageCount,
-      numberOfCopies: _copies,
-      isColor: _isColor,
-      isDoubleSided: _isDoubleSided,
-      hasBinding: _hasBinding,
-      hasStaple: _hasStaple,
-    );
+          pageCount: _selectedDoc!.pageCount,
+          numberOfCopies: _copies,
+          isColor: _isColor,
+          isDoubleSided: _isDoubleSided,
+          hasBinding: _hasBinding,
+          hasStaple: _hasStaple,
+        );
     if (mounted) setState(() => _isCalculating = false);
   }
 
-  Future<void> _handleCreateOrder() async {
+  /// BR02: Không gọi API tạo đơn trực tiếp từ đây.
+  /// Chuyển sang OrderConfirmationScreen để người dùng review + xác nhận.
+  void _handleProceedToConfirmation() {
     if (_selectedDoc == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn tài liệu cần in')),
@@ -78,35 +89,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
-    final orderProvider = context.read<OrderProvider>();
-    final newOrder = await orderProvider.createOrder(
-      documentId: _selectedDoc!.id,
-      numberOfCopies: _copies,
-      isColor: _isColor,
-      isDoubleSided: _isDoubleSided,
-      hasBinding: _hasBinding,
-      hasStaple: _hasStaple,
-      notes: _notes,
-    );
-
-    if (!mounted) return;
-
-    if (newOrder != null) {
+    final estimatedPrice = context.read<OrderProvider>().estimatedPrice;
+    if (estimatedPrice == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Tạo đơn in ${newOrder.orderCode} thành công!'),
-          backgroundColor: AppColors.statusCompleted,
+        const SnackBar(
+          content: Text('Đang tính giá, vui lòng chờ vài giây rồi thử lại...'),
         ),
       );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(orderProvider.errorMessage ?? 'Không thể tạo đơn in'),
-          backgroundColor: AppColors.statusCancelled,
-        ),
-      );
+      return;
     }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderConfirmationScreen(
+          document: _selectedDoc!,
+          numberOfCopies: _copies,
+          isColor: _isColor,
+          isDoubleSided: _isDoubleSided,
+          hasBinding: _hasBinding,
+          hasStaple: _hasStaple,
+          estimatedPrice: estimatedPrice,
+          notes: _notesController.text.trim(),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleUploadDocument() async {
@@ -118,7 +125,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       _triggerPriceCalculation();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đã chọn tài liệu "${newDoc.fileName}" (${newDoc.pageCount} trang)'),
+          content: Text(
+              'Đã chọn tài liệu "${newDoc.fileName}" (${newDoc.pageCount} trang)'),
           backgroundColor: AppColors.statusCompleted,
         ),
       );
@@ -157,7 +165,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('1. Chọn tài liệu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                const Text(
+                  '1. Chọn tài liệu',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary),
+                ),
                 Row(
                   children: [
                     TextButton.icon(
@@ -165,7 +179,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       label: const Text('Quản lý'),
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MyDocumentsScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const MyDocumentsScreen()),
                       ),
                     ),
                     TextButton.icon(
@@ -179,14 +194,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: docProvider.documents.isEmpty
                     ? ListTile(
-                        leading: const Icon(Icons.upload_file, color: AppColors.primary),
+                        leading: const Icon(Icons.upload_file,
+                            color: AppColors.primary),
                         title: const Text('Chưa có tài liệu nào'),
-                        subtitle: const Text('Nhấn "Tải lên mới" để thêm tài liệu PDF/Word cần in'),
+                        subtitle: const Text(
+                            'Nhấn "Tải lên mới" để thêm tài liệu PDF/Word cần in'),
                         trailing: ElevatedButton(
                           onPressed: _handleUploadDocument,
                           child: const Text('Tải lên'),
@@ -199,7 +218,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           items: docProvider.documents.map((doc) {
                             return DropdownMenuItem<DocumentModel>(
                               value: doc,
-                              child: Text('${doc.fileName} (${doc.pageCount} trang)'),
+                              child: Text(
+                                  '${doc.fileName} (${doc.pageCount} trang)'),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -213,11 +233,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             const SizedBox(height: 20),
 
             // Section 2: Print Settings
-            const Text('2. Tùy chọn in ấn', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            const Text(
+              '2. Tùy chọn in ấn',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary),
+            ),
             const SizedBox(height: 8),
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Column(
                 children: [
                   ListTile(
@@ -234,7 +261,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 }
                               : null,
                         ),
-                        Text('$_copies', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(
+                          '$_copies',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.add_circle_outline),
                           onPressed: () {
@@ -285,18 +316,54 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Section 2b: Notes
+            const Text(
+              '3. Ghi chú cho nhân viên (tuỳ chọn)',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _notesController,
+              maxLines: 3,
+              maxLength: 200,
+              decoration: InputDecoration(
+                hintText: 'VD: In từ trang 5 đến 20, giấy A4...',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // Section 3: Price Preview — Task 8: Tính giá realtime
             Row(
               children: [
-                const Text('3. Dự tính chi phí', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                const Text(
+                  '4. Dự tính chi phí',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary),
+                ),
                 if (_isCalculating) ...[
                   const SizedBox(width: 10),
                   const SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primary),
                   ),
                 ],
               ],
@@ -307,7 +374,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: _isCalculating ? AppColors.primary.withValues(alpha: 0.3) : AppColors.primaryLight,
+                  color: _isCalculating
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : AppColors.primaryLight,
                   width: 1.2,
                 ),
               ),
@@ -325,7 +394,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       ),
                       const SizedBox(height: 6),
                       _priceRow(
-                        label: 'Tiền trang in (${_selectedDoc?.pageCount ?? 0}tr × $_copies bản):',
+                        label:
+                            'Tiền trang in (${_selectedDoc?.pageCount ?? 0}tr × $_copies bản):',
                         value: estimatedPrice?.pageSubtotal,
                         fallback: 0,
                       ),
@@ -339,10 +409,20 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('TỔNG DỰ KIẾN:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          const Text(
+                            'TỔNG DỰ KIẾN:',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary),
+                          ),
                           Text(
-                            _currencyFormat.format(estimatedPrice?.totalEstimatedPrice ?? 0),
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                            _currencyFormat.format(
+                                estimatedPrice?.totalEstimatedPrice ?? 0),
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.secondary),
                           ),
                         ],
                       ),
@@ -353,34 +433,42 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Submit Button
+            // Submit Button — BR02: chuyển sang màn hình xác nhận
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: orderProvider.isLoading ? null : _handleCreateOrder,
-                child: orderProvider.isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Xác Nhận & Đặt In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                onPressed: (_isCalculating || estimatedPrice == null)
+                    ? null
+                    : _handleProceedToConfirmation,
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: const Text(
+                  'Tiếp Tục & Xem Xác Nhận',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _priceRow({required String label, double? value, double fallback = 0}) {
+  Widget _priceRow(
+      {required String label, double? value, double fallback = 0}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+          child: Text(label,
+              style: const TextStyle(color: AppColors.textSecondary)),
         ),
         Text(_currencyFormat.format(value ?? fallback)),
       ],
