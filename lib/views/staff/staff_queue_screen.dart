@@ -13,6 +13,7 @@ import 'components/staff_order_card.dart';
 import 'staff_qr_scanner_screen.dart';
 import 'staff_shelves_screen.dart';
 import '../profile/profile_screen.dart';
+import '../admin/price_config_screen.dart';
 
 /// Màn hình quản lý hàng đợi in ấn dành cho nhân viên (Staff Queue)
 /// Hỗ trợ 2 Tab: Đang chờ xử lý in & Đã in xong (Chờ lấy)
@@ -151,6 +152,16 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
             ],
           ),
           actions: [
+            // Task 20: chỉ Admin thấy nút cấu hình bảng giá
+            if (auth.currentUser?.isAdmin ?? false)
+              IconButton(
+                icon: const Icon(Icons.price_change_outlined),
+                tooltip: 'Cấu hình bảng giá',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PriceConfigScreen()),
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.shelves),
               tooltip: 'Quản lý kệ lưu trữ',
