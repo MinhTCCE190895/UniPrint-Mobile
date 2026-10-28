@@ -9,6 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/order_tracking_model.dart';
 import '../../models/print_order_model.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/payment_provider.dart';
 import 'components/payment_section.dart';
 
 /// Task 19: Chi tiết theo dõi đơn — tiến trình, vị trí kệ nhận hàng, mã QR nhận và hóa đơn thanh toán.
@@ -64,6 +65,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       _loading = true;
       _error = null;
     });
+    // Làm mới cả hóa đơn khi đã hiển thị (nhân viên có thể vừa xác nhận thanh toán).
+    if (_tracking != null) {
+      context.read<PaymentProvider>().loadPayment(widget.orderId);
+    }
     try {
       final tracking = await context.read<OrderProvider>().loadOrderTracking(
         widget.orderId,
