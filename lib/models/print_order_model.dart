@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'payment_model.dart';
 
 enum OrderStatus {
   pending(1, 'Chờ xử lý', AppColors.statusPending),
@@ -37,7 +38,8 @@ class PrintOrderModel {
   final String? shelfCode;
   final String? qrToken;
   final DateTime? qrExpiresAt;
-  final int paymentStatus; // 0: Pending, 1: Paid, 2: Failed
+  final int paymentStatus; // 1: Pending, 2: Paid, 3: Failed, 4: Refunded
+  final int paymentMethod; // 1: Cash, 2: VietQR
   final DateTime createdAt;
 
   PrintOrderModel({
@@ -54,8 +56,15 @@ class PrintOrderModel {
     this.qrToken,
     this.qrExpiresAt,
     required this.paymentStatus,
+    this.paymentMethod = 1,
     required this.createdAt,
   });
+
+  PaymentStatusType get paymentStatusType =>
+      PaymentStatusType.fromValue(paymentStatus);
+  PaymentMethodType get paymentMethodType =>
+      PaymentMethodType.fromValue(paymentMethod);
+  bool get isPaid => paymentStatusType == PaymentStatusType.paid;
 
   bool get canCancel =>
       status == OrderStatus.pending || status == OrderStatus.processing;
@@ -83,7 +92,8 @@ class PrintOrderModel {
       qrToken: json['qrToken'],
       qrExpiresAt: DateTime.tryParse(json['qrExpiresAt']?.toString() ?? '')
           ?.toUtc(),
-      paymentStatus: json['paymentStatus'] is int ? json['paymentStatus'] : 0,
+      paymentStatus: json['paymentStatus'] is int ? json['paymentStatus'] : 1,
+      paymentMethod: json['paymentMethod'] is int ? json['paymentMethod'] : 1,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),

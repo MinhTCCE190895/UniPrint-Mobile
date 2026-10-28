@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'components/assign_shelf_dialog.dart';
+import 'components/confirm_payment_dialog.dart';
 import 'components/confirm_status_dialog.dart';
 import 'components/staff_order_card.dart';
 import 'staff_qr_scanner_screen.dart';
@@ -72,6 +73,19 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
         context.read<OrderProvider>().loadStaffQueue();
       },
     );
+  }
+
+  /// Task 18: Thu tiền mặt / xác nhận chuyển khoản rồi tải lại hàng đợi.
+  Future<void> _onConfirmPayment(PrintOrderModel order) async {
+    final payment = await ConfirmPaymentDialog.show(context, order);
+    if (payment == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${order.orderCode}: ${payment.status.label} (${payment.method.label})'),
+        backgroundColor: AppColors.statusCompleted,
+      ),
+    );
+    await context.read<OrderProvider>().loadStaffQueue();
   }
 
   Future<void> _handleLogout() async {
@@ -297,6 +311,7 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                       queueIndex: index + 1,
                       onStatusChange: _onStatusChange,
                       onAssignShelf: _onAssignShelf,
+                      onConfirmPayment: _onConfirmPayment,
                     );
                   },
                 ),

@@ -8,6 +8,7 @@ import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'create_order_screen.dart';
 import 'order_qr_screen.dart';
+import 'payment_screen.dart';
 import 'my_documents_screen.dart';
 import '../profile/profile_screen.dart';
 
@@ -90,6 +91,41 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         );
       }
     }
+  }
+
+  /// Task 18: Trạng thái thanh toán + lối vào màn hình thanh toán (Cash / VietQR).
+  Widget _buildPaymentRow(PrintOrderModel order) {
+    final status = order.paymentStatusType;
+    return Row(
+      children: [
+        Icon(
+          order.isPaid ? Icons.verified_outlined : Icons.account_balance_wallet_outlined,
+          size: 16,
+          color: status.color,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            order.isPaid ? status.label : '${status.label} • ${order.paymentMethodType.label}',
+            style: TextStyle(color: status.color, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PaymentScreen(order: order)),
+            );
+            if (mounted) context.read<OrderProvider>().loadMyOrders();
+          },
+          child: Text(order.isPaid ? 'Xem hóa đơn' : 'Thanh toán', style: const TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
   }
 
   @override
@@ -233,6 +269,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                     Text('Vị trí nhận: Kệ ${order.shelfCode}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary)),
                                   ],
                                 ),
+                              ],
+                              if (order.status != OrderStatus.cancelled) ...[
+                                const SizedBox(height: 4),
+                                _buildPaymentRow(order),
                               ],
                               const Divider(height: 20),
                               Row(

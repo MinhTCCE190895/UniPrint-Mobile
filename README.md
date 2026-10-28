@@ -108,3 +108,9 @@ flutter test --no-pub
 ```
 
 Cần kiểm thử thực tế với backend và thiết bị để xác nhận camera, phân quyền, token hết hạn, quét trùng, quét đồng thời và giải phóng slot. Tài khoản demo trong README cần tồn tại trong backend đang chạy.
+
+## Task 18 — Thanh toán (Cash / VietQR)
+
+- Sinh viên: bấm **Thanh toán** trên thẻ đơn để xem hóa đơn, chọn *Tiền mặt khi nhận* hoặc *Chuyển khoản VietQR*. Mã VietQR được app tự vẽ từ `vietQr.qrPayload` (chuẩn NAPAS) kèm số tài khoản và nội dung chuyển khoản có nút sao chép.
+- Staff: đơn đã in xong mà chưa thanh toán có nút **Thu tiền** trong hàng đợi; sau khi quét QR giao tài liệu thành công cũng có nút **Thu tiền**. Chuyển khoản bắt buộc nhập mã giao dịch ngân hàng.
+- Đã sửa giá trị `paymentMethod` mặc định khi tạo đơn thành `1` (Cash) và mapping `paymentStatus` theo enum backend (1 Pending, 2 Paid, 3 Failed, 4 Refunded).
