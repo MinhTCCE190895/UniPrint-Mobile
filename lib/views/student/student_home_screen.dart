@@ -8,6 +8,7 @@ import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'create_order_screen.dart';
 import 'order_qr_screen.dart';
+import 'order_tracking_screen.dart';
 import 'payment_screen.dart';
 import 'my_documents_screen.dart';
 import '../profile/profile_screen.dart';
@@ -91,6 +92,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         );
       }
     }
+  }
+
+  /// Task 19: Mở màn hình theo dõi chi tiết đơn, quay lại thì tải lại danh sách.
+  Future<void> _openTracking(PrintOrderModel order) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderTrackingScreen(orderId: order.id, orderCode: order.orderCode),
+      ),
+    );
+    if (mounted) context.read<OrderProvider>().loadMyOrders();
   }
 
   /// Task 18: Trạng thái thanh toán + lối vào màn hình thanh toán (Cash / VietQR).
@@ -224,7 +236,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
-                        child: Padding(
+                        clipBehavior: Clip.antiAlias,
+                        // Task 19: chạm vào thẻ để xem chi tiết theo dõi đơn
+                        child: InkWell(
+                          onTap: () => _openTracking(order),
+                          child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,6 +345,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                               ),
                             ],
                           ),
+                        ),
                         ),
                       );
                     },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/order_tracking_model.dart';
 import '../models/print_order_model.dart';
 import '../services/order_service.dart';
 
@@ -24,6 +25,10 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
     return order;
   }
+
+  /// Task 19: Tải chi tiết theo dõi đơn. Ném lỗi để màn hình hiển thị và cho thử lại.
+  Future<OrderTrackingModel> loadOrderTracking(String id) =>
+      OrderService.getOrderTracking(id);
 
   Future<void> loadMyOrders() async {
     _isLoading = true;

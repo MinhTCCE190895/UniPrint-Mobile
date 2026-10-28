@@ -27,6 +27,8 @@ class ApiEndpoints {
   static const String scanPickupQr = '$baseUrl/printorders/scan-pickup-qr';
 
   static String orderById(String id) => '$baseUrl/printorders/$id';
+  static String orderTracking(String id) =>
+      '$baseUrl/printorders/$id/tracking'; // Task 19
   static String updateOrderStatus(String id) =>
       '$baseUrl/printorders/$id/status';
   static String assignShelf(String id) =>

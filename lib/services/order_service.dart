@@ -1,5 +1,6 @@
 import '../core/constants/api_endpoints.dart';
 import '../core/network/api_client.dart';
+import '../models/order_tracking_model.dart';
 import '../models/print_order_model.dart';
 
 class OrderService {
@@ -140,6 +141,19 @@ class OrderService {
       return response['message'] as String;
     }
     return 'Đã gán đơn hàng vào kệ thành công.';
+  }
+
+  /// Task 19: Chi tiết theo dõi đơn (kệ nhận hàng, mã QR, hóa đơn).
+  static Future<OrderTrackingModel> getOrderTracking(String id) async {
+    final response = await ApiClient.get(
+      ApiEndpoints.orderTracking(id),
+      withAuth: true,
+    );
+    final data =
+        (response is Map<String, dynamic> && response.containsKey('data'))
+        ? response['data']
+        : response;
+    return OrderTrackingModel.fromJson(data);
   }
 
   static Future<void> cancelOrder(String id) async {
