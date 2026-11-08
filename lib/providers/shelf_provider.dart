@@ -5,11 +5,13 @@ import '../services/shelf_service.dart';
 class ShelfProvider extends ChangeNotifier {
   List<ShelfModel> _shelves = [];
   List<ShelfModel> _availableShelves = [];
+  ShelfInventoryResponse? _inventory;
   bool _isLoading = false;
   String? _errorMessage;
 
   List<ShelfModel> get shelves => _shelves;
   List<ShelfModel> get availableShelves => _availableShelves;
+  ShelfInventoryResponse? get inventory => _inventory;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -28,13 +30,28 @@ class ShelfProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void setInventoryForTesting(ShelfInventoryResponse inv) {
+    _inventory = inv;
+    _shelves = inv.shelves;
+    _availableShelves = inv.shelves.where((s) => s.isAvailable).toList();
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<void> fetchShelves() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _shelves = await ShelfService.getShelves();
+      final inv = await ShelfService.getShelfInventory();
+      if (inv != null) {
+        _inventory = inv;
+        _shelves = inv.shelves;
+      } else {
+        _shelves = await ShelfService.getShelves();
+      }
       _availableShelves = _shelves.where((s) => s.isAvailable).toList();
     } catch (e) {
       _errorMessage = e
@@ -45,6 +62,10 @@ class ShelfProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> fetchInventory() async {
+    await fetchShelves();
   }
 
   Future<void> fetchAvailableShelves() async {

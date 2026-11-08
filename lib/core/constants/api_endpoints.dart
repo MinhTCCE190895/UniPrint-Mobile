@@ -40,6 +40,7 @@ class ApiEndpoints {
   // Shelves endpoints
   static const String shelves = '$baseUrl/shelves';
   static const String availableShelves = '$baseUrl/shelves/available';
+  static const String shelfInventory = '$baseUrl/shelves/inventory';
   static String shelfById(String id) => '$baseUrl/shelves/$id';
 
   // Task 18: Payment endpoints
