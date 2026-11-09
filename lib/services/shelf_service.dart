@@ -27,6 +27,18 @@ class ShelfService {
     return [];
   }
 
+  static Future<ShelfInventoryResponse?> getShelfInventory() async {
+    final response = await ApiClient.get(ApiEndpoints.shelfInventory, withAuth: true);
+    final data = (response is Map<String, dynamic> && response.containsKey('data'))
+        ? response['data']
+        : response;
+
+    if (data is Map<String, dynamic>) {
+      return ShelfInventoryResponse.fromJson(data);
+    }
+    return null;
+  }
+
   static Future<ShelfModel> createShelf({
     required String shelfCode,
     String location = 'Main Library Floor 1',

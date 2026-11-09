@@ -12,12 +12,22 @@ class StaffShelvesScreen extends StatefulWidget {
 }
 
 class _StaffShelvesScreenState extends State<StaffShelvesScreen> {
+  String _selectedFilter = 'all'; // 'all', 'available', 'full'
+  String _shelfSearchQuery = '';
+  final _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ShelfProvider>().fetchShelves();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _showAddShelfDialog() {
@@ -323,6 +333,24 @@ class _StaffShelvesScreenState extends State<StaffShelvesScreen> {
     );
   }
 
+  void _showShelfInventorySheet(ShelfModel shelf) {
+    final storedOrders = shelf is ShelfInventoryItem
+        ? shelf.storedOrders
+        : <ShelfInventoryOrder>[];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _ShelfInventorySheetContent(
+        shelf: shelf,
+        storedOrders: storedOrders,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -391,16 +419,108 @@ class _StaffShelvesScreenState extends State<StaffShelvesScreen> {
             );
           }
 
+          final query = _shelfSearchQuery.trim().toLowerCase();
+          final filteredShelves = provider.shelves.where((shelf) {
+            final matchesFilter = _selectedFilter == 'all'
+                ? true
+                : (_selectedFilter == 'available'
+                    ? shelf.isAvailable
+                    : !shelf.isAvailable);
+            final matchesQuery = query.isEmpty ||
+                shelf.shelfCode.toLowerCase().contains(query) ||
+                shelf.location.toLowerCase().contains(query);
+            return matchesFilter && matchesQuery;
+          }).toList();
+
           return RefreshIndicator(
             onRefresh: () => provider.fetchShelves(),
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
                 _buildOverviewCard(provider),
-                const SizedBox(height: 16),
-                const Text(
-                  'Danh Sách Kệ Lưu Trữ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                const SizedBox(height: 14),
+                // Search bar
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm kệ theo mã hoặc vị trí...',
+                    hintStyle:
+                        TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _shelfSearchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              setState(() {
+                                _shelfSearchQuery = '';
+                                _searchController.clear();
+                              });
+                            },
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8, horizontal: 12),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  style: const TextStyle(fontSize: 13),
+                  onChanged: (val) {
+                    setState(() {
+                      _shelfSearchQuery = val;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                // Filter chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        label: 'Tất cả (${provider.totalShelves})',
+                        value: 'all',
+                        selected: _selectedFilter == 'all',
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'Còn chỗ (${provider.availableShelvesCount})',
+                        value: 'available',
+                        selected: _selectedFilter == 'available',
+                        dotColor: Colors.green.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'Đã đầy (${provider.fullShelvesCount})',
+                        value: 'full',
+                        selected: _selectedFilter == 'full',
+                        dotColor: Colors.red.shade700,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Danh Sách Kệ Lưu Trữ',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Hiển thị ${filteredShelves.length}/${provider.totalShelves}',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 if (provider.shelves.isEmpty)
@@ -413,8 +533,29 @@ class _StaffShelvesScreenState extends State<StaffShelvesScreen> {
                       ),
                     ),
                   )
+                else if (filteredShelves.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32.0),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.search_off_rounded,
+                              size: 40, color: Colors.grey.shade400),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Không tìm thấy kệ nào khớp với điều kiện lọc.',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 else
-                  ...provider.shelves.map((shelf) => _buildShelfCard(shelf)),
+                  ...filteredShelves.map((shelf) => _buildShelfCard(shelf)),
                 const SizedBox(height: 80), // spacing for FAB
               ],
             ),
@@ -590,13 +731,25 @@ class _StaffShelvesScreenState extends State<StaffShelvesScreen> {
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
                   onSelected: (val) {
-                    if (val == 'edit') {
+                    if (val == 'inventory') {
+                      _showShelfInventorySheet(shelf);
+                    } else if (val == 'edit') {
                       _showEditShelfDialog(shelf);
                     } else if (val == 'delete') {
                       _confirmDeleteShelf(shelf);
                     }
                   },
                   itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: 'inventory',
+                      child: Row(
+                        children: [
+                          Icon(Icons.receipt_long, size: 18),
+                          SizedBox(width: 8),
+                          Text('Kiểm kê đơn'),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'edit',
                       child: Row(
@@ -663,8 +816,411 @@ class _StaffShelvesScreenState extends State<StaffShelvesScreen> {
                 minHeight: 7,
               ),
             ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.receipt_long, size: 16),
+                label: Text(
+                  shelf is ShelfInventoryItem && shelf.storedOrders.isNotEmpty
+                      ? 'Kiểm kê đơn hàng (${shelf.storedOrders.length})'
+                      : (shelf.currentCount > 0
+                          ? 'Kiểm kê đơn hàng (${shelf.currentCount})'
+                          : 'Kiểm kê đơn hàng (Trống)'),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                onPressed: () => _showShelfInventorySheet(shelf),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required String value,
+    required bool selected,
+    Color? dotColor,
+  }) {
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dotColor != null) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(label),
+        ],
+      ),
+      selected: selected,
+      onSelected: (val) {
+        if (val) {
+          setState(() {
+            _selectedFilter = value;
+          });
+        }
+      },
+      selectedColor: AppColors.primary.withValues(alpha: 0.15),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+        color: selected ? AppColors.primary : Colors.grey.shade700,
+      ),
+      side: BorderSide(
+        color: selected ? AppColors.primary : Colors.grey.shade300,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      showCheckmark: false,
+    );
+  }
+}
+
+class _ShelfInventorySheetContent extends StatefulWidget {
+  final ShelfModel shelf;
+  final List<ShelfInventoryOrder> storedOrders;
+
+  const _ShelfInventorySheetContent({
+    required this.shelf,
+    required this.storedOrders,
+  });
+
+  @override
+  State<_ShelfInventorySheetContent> createState() =>
+      _ShelfInventorySheetContentState();
+}
+
+class _ShelfInventorySheetContentState
+    extends State<_ShelfInventorySheetContent> {
+  String _query = '';
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.trim().toLowerCase();
+    final filtered = widget.storedOrders.where((order) {
+      if (q.isEmpty) return true;
+      return order.orderCode.toLowerCase().contains(q) ||
+          order.studentName.toLowerCase().contains(q) ||
+          order.documentName.toLowerCase().contains(q);
+    }).toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.65,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Kệ ${widget.shelf.shelfCode}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        q.isEmpty
+                            ? 'Kiểm Kê Đơn Lưu Trữ'
+                            : 'Khớp ${filtered.length}/${widget.storedOrders.length} đơn',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        'Đang lưu: ${widget.shelf.currentCount}/${widget.shelf.maxCapacity} đơn (${(widget.shelf.occupancyRatio * 100).toStringAsFixed(1)}%)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          if (widget.storedOrders.length > 1) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Tìm theo mã đơn, sinh viên, tài liệu...',
+                  hintStyle:
+                      TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _query = '';
+                              _searchController.clear();
+                            });
+                          },
+                        )
+                      : null,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                style: const TextStyle(fontSize: 13),
+                onChanged: (val) {
+                  setState(() {
+                    _query = val;
+                  });
+                },
+              ),
+            ),
+          ],
+          const Divider(height: 1),
+          Expanded(
+            child: widget.storedOrders.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Kệ hiện đang trống',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Chưa có đơn hàng nào đang lưu trữ trên kệ này.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : (filtered.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: 40,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Không tìm thấy đơn hàng nào khớp với "$_query".',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (ctx, i) {
+                          final order = filtered[i];
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              border: Border.all(color: Colors.grey.shade200),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      order.orderCode,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: order.isPaid
+                                            ? Colors.green.shade50
+                                            : Colors.orange.shade50,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        order.isPaid
+                                            ? 'Đã thanh toán'
+                                            : 'Chờ thanh toán',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: order.isPaid
+                                              ? Colors.green.shade700
+                                              : Colors.orange.shade800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.person_outline,
+                                      size: 14,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      order.studentName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.description_outlined,
+                                      size: 14,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        order.documentName,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${order.numberOfCopies} bản • ${order.isColor ? "Màu" : "Trắng đen"} • ${order.isDoubleSided ? "2 mặt" : "1 mặt"}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${order.totalPrice.toStringAsFixed(0)} đ',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      )),
+          ),
+        ],
       ),
     );
   }
