@@ -14,6 +14,12 @@ class ApiEndpoints {
   static const String updateProfile = '$baseUrl/auth/profile';
   static const String changePassword = '$baseUrl/auth/change-password';
 
+  // Task 5: Admin User Management
+  static const String users = '$baseUrl/users';
+  static String userById(String id) => '$baseUrl/users/$id';
+  static String userRole(String id) => '$baseUrl/users/$id/role';
+  static String userStatus(String id) => '$baseUrl/users/$id/status';
+
   // Document endpoints
   static const String documents = '$baseUrl/documents';
   static const String uploadDocument = '$baseUrl/documents/upload';
