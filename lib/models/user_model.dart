@@ -1,16 +1,22 @@
-﻿class UserModel {
+class UserModel {
   final String id;
   final String fullName;
   final String email;
   final String? phoneNumber;
+  final String? avatarUrl;
   final int role; // 1: Student, 2: Staff, 3: Admin
+  final bool isActive;
+  final DateTime? createdAt;
 
   UserModel({
     required this.id,
     required this.fullName,
     required this.email,
     this.phoneNumber,
+    this.avatarUrl,
     required this.role,
+    this.isActive = true,
+    this.createdAt,
   });
 
   bool get isStudent => role == 1;
@@ -30,13 +36,54 @@
     }
   }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  UserModel copyWith({
+    String? id,
+    String? fullName,
+    String? email,
+    String? phoneNumber,
+    String? avatarUrl,
+    int? role,
+    bool? isActive,
+    DateTime? createdAt,
+  }) {
     return UserModel(
-      id: json['id'] ?? json['userId'] ?? '',
-      fullName: json['fullName'] ?? '',
-      email: json['email'] ?? '',
-      phoneNumber: json['phoneNumber'],
-      role: json['role'] is int ? json['role'] : 1,
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    int parsedRole = 1;
+    if (json['role'] is int) {
+      parsedRole = json['role'];
+    } else if (json['role'] is String) {
+      final rStr = (json['role'] as String).toLowerCase();
+      if (rStr == 'admin' || rStr == '3') {
+        parsedRole = 3;
+      } else if (rStr == 'staff' || rStr == '2') {
+        parsedRole = 2;
+      } else {
+        parsedRole = 1;
+      }
+    }
+
+    return UserModel(
+      id: (json['id'] ?? json['userId'] ?? '').toString(),
+      fullName: (json['fullName'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      phoneNumber: json['phoneNumber']?.toString(),
+      avatarUrl: json['avatarUrl']?.toString(),
+      role: parsedRole,
+      isActive: json['isActive'] is bool ? json['isActive'] : true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
     );
   }
 
@@ -45,7 +92,10 @@
     'fullName': fullName,
     'email': email,
     'phoneNumber': phoneNumber,
+    'avatarUrl': avatarUrl,
     'role': role,
+    'isActive': isActive,
+    'createdAt': createdAt?.toIso8601String(),
   };
 }
 
