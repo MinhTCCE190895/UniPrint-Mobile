@@ -10,6 +10,7 @@ import '../../models/order_tracking_model.dart';
 import '../../models/print_order_model.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/payment_provider.dart';
+import 'components/cancel_order_dialog.dart';
 import 'components/payment_section.dart';
 
 /// Task 19: Chi tiết theo dõi đơn — tiến trình, vị trí kệ nhận hàng, mã QR nhận và hóa đơn thanh toán.
@@ -88,6 +89,35 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     }
   }
 
+  Future<void> _handleCancel(OrderTrackingModel tracking) async {
+    final confirm = await CancelOrderDialog.show(
+      context,
+      orderCode: tracking.orderCode,
+      documentName: tracking.documentName,
+      totalPrice: tracking.totalPrice,
+    );
+
+    if (confirm == true && mounted) {
+      final orderProvider = context.read<OrderProvider>();
+      final success = await orderProvider.cancelOrder(tracking.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? 'Đã hủy đơn ${tracking.orderCode} thành công'
+                : (orderProvider.errorMessage ?? 'Không thể hủy đơn')),
+            backgroundColor: success
+                ? AppColors.statusCompleted
+                : AppColors.statusCancelled,
+          ),
+        );
+        if (success) {
+          _load();
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = _tracking;
@@ -97,6 +127,19 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         title: Text(t?.orderCode ?? widget.orderCode ?? 'Chi tiết đơn in'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          if (t?.canCancel == true)
+            TextButton(
+              onPressed: () => _handleCancel(t!),
+              child: const Text(
+                'Hủy đơn',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -119,10 +162,62 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                     orderId: t.id,
                     allowChangeMethod: t.status != OrderStatus.cancelled,
                   ),
+                  if (t.canCancel || t.status == OrderStatus.printing) ...[
+                    const SizedBox(height: 12),
+                    _buildCancelSection(t),
+                  ],
                 ],
               ),
       ),
     );
+  }
+
+  Widget _buildCancelSection(OrderTrackingModel t) {
+    if (t.canCancel) {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.statusCancelled,
+            side: const BorderSide(color: AppColors.statusCancelled),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          icon: const Icon(Icons.cancel_outlined, size: 20),
+          label: const Text(
+            'Hủy đơn in này',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          onPressed: () => _handleCancel(t),
+        ),
+      );
+    } else if (t.status == OrderStatus.printing) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.statusPrinting.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.statusPrinting.withValues(alpha: 0.3)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: AppColors.statusPrinting, size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Đơn hàng đang trong tiến trình in ấn, không thể hủy theo quy định (BR02).',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.statusPrinting,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildPlaceholder() {

@@ -6,6 +6,7 @@ import '../../models/print_order_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
+import 'components/cancel_order_dialog.dart';
 import 'create_order_screen.dart';
 import 'order_qr_screen.dart';
 import 'order_tracking_screen.dart';
@@ -31,31 +32,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     });
   }
 
-  Future<void> _handleCancel(String orderId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xác nhận hủy đơn'),
-        content: const Text('Bạn có chắc chắn muốn hủy đơn in này không? Chỉ có thể hủy khi đơn chưa được in.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Đóng')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCancelled, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hủy đơn'),
-          ),
-        ],
-      ),
+  Future<void> _handleCancel(PrintOrderModel order) async {
+    final confirm = await CancelOrderDialog.show(
+      context,
+      orderCode: order.orderCode,
+      documentName: order.documentName,
+      totalPrice: order.totalPrice,
     );
 
     if (confirm == true && mounted) {
       final orderProvider = context.read<OrderProvider>();
-      final success = await orderProvider.cancelOrder(orderId);
+      final success = await orderProvider.cancelOrder(order.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(success
-                ? 'Đã hủy đơn thành công'
+                ? 'Đã hủy đơn ${order.orderCode} thành công'
                 : (orderProvider.errorMessage ?? 'Không thể hủy đơn')),
             backgroundColor: success
                 ? AppColors.statusCompleted
@@ -314,7 +306,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                         const SizedBox(width: 8),
                                         OutlinedButton(
                                           style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusCancelled),
-                                          onPressed: () => _handleCancel(order.id),
+                                          onPressed: () => _handleCancel(order),
                                           child: const Text('Hủy', style: TextStyle(fontSize: 12)),
                                         ),
                                       ] else if (order.status == OrderStatus.printing) ...[
