@@ -17,10 +17,44 @@ enum OrderStatus {
   final Color color;
   const OrderStatus(this.value, this.label, this.color);
 
-  static OrderStatus fromValue(int val) {
+  static OrderStatus fromValue(dynamic val) {
+    if (val == null) return OrderStatus.pending;
+    if (val is int) {
+      return OrderStatus.values.firstWhere(
+        (e) => e.value == val,
+        orElse: () => OrderStatus.pending,
+      );
+    }
+    final str = val.toString().trim().toLowerCase();
+    final intVal = int.tryParse(str);
+    if (intVal != null) {
+      return OrderStatus.values.firstWhere(
+        (e) => e.value == intVal,
+        orElse: () => OrderStatus.pending,
+      );
+    }
     return OrderStatus.values.firstWhere(
-      (e) => e.value == val,
-      orElse: () => OrderStatus.pending,
+      (e) => e.name.toLowerCase() == str,
+      orElse: () {
+        switch (str) {
+          case 'pending':
+            return OrderStatus.pending;
+          case 'processing':
+            return OrderStatus.processing;
+          case 'printing':
+            return OrderStatus.printing;
+          case 'shelfassigned':
+            return OrderStatus.shelfAssigned;
+          case 'readyforpickup':
+            return OrderStatus.readyForPickup;
+          case 'completed':
+            return OrderStatus.completed;
+          case 'cancelled':
+            return OrderStatus.cancelled;
+          default:
+            return OrderStatus.pending;
+        }
+      },
     );
   }
 }
@@ -88,7 +122,7 @@ class PrintOrderModel {
       totalPrice: (json['totalPrice'] is num)
           ? (json['totalPrice'] as num).toDouble()
           : 0.0,
-      status: OrderStatus.fromValue(json['status'] is int ? json['status'] : 1),
+      status: OrderStatus.fromValue(json['status']),
       shelfCode: json['shelfCode'],
       qrToken: json['qrToken'],
       qrExpiresAt: DateTime.tryParse(json['qrExpiresAt']?.toString() ?? '')

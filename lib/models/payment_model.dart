@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
 import '../core/utils/server_date.dart';
+import 'print_order_model.dart';
 
 /// Task 18: Phương thức thanh toán — khớp enum PaymentMethod của backend.
 enum PaymentMethodType {
@@ -13,8 +14,23 @@ enum PaymentMethodType {
   final IconData icon;
   const PaymentMethodType(this.value, this.label, this.icon);
 
-  static PaymentMethodType fromValue(dynamic val) => PaymentMethodType.values
-      .firstWhere((e) => e.value == val, orElse: () => PaymentMethodType.cash);
+  static PaymentMethodType fromValue(dynamic val) {
+    if (val == null) return PaymentMethodType.cash;
+    if (val is int) {
+      return PaymentMethodType.values
+          .firstWhere((e) => e.value == val, orElse: () => PaymentMethodType.cash);
+    }
+    final str = val.toString().trim().toLowerCase();
+    final intVal = int.tryParse(str);
+    if (intVal != null) {
+      return PaymentMethodType.values
+          .firstWhere((e) => e.value == intVal, orElse: () => PaymentMethodType.cash);
+    }
+    return PaymentMethodType.values.firstWhere(
+      (e) => e.name.toLowerCase() == str,
+      orElse: () => str.contains('vietqr') ? PaymentMethodType.vietQr : PaymentMethodType.cash,
+    );
+  }
 }
 
 /// Task 18: Trạng thái hóa đơn — khớp enum PaymentStatus của backend.
@@ -29,8 +45,23 @@ enum PaymentStatusType {
   final Color color;
   const PaymentStatusType(this.value, this.label, this.color);
 
-  static PaymentStatusType fromValue(dynamic val) => PaymentStatusType.values
-      .firstWhere((e) => e.value == val, orElse: () => PaymentStatusType.pending);
+  static PaymentStatusType fromValue(dynamic val) {
+    if (val == null) return PaymentStatusType.pending;
+    if (val is int) {
+      return PaymentStatusType.values
+          .firstWhere((e) => e.value == val, orElse: () => PaymentStatusType.pending);
+    }
+    final str = val.toString().trim().toLowerCase();
+    final intVal = int.tryParse(str);
+    if (intVal != null) {
+      return PaymentStatusType.values
+          .firstWhere((e) => e.value == intVal, orElse: () => PaymentStatusType.pending);
+    }
+    return PaymentStatusType.values.firstWhere(
+      (e) => e.name.toLowerCase() == str,
+      orElse: () => PaymentStatusType.pending,
+    );
+  }
 }
 
 class VietQrInfo {
@@ -106,7 +137,7 @@ class PaymentModel {
     orderId: json['orderId']?.toString() ?? '',
     orderCode: json['orderCode']?.toString() ?? '',
     studentName: json['studentName']?.toString() ?? '',
-    orderStatus: json['orderStatus'] is int ? json['orderStatus'] : 1,
+    orderStatus: OrderStatus.fromValue(json['orderStatus']).value,
     amount: (json['amount'] as num?)?.toDouble() ?? 0,
     method: PaymentMethodType.fromValue(json['method']),
     status: PaymentStatusType.fromValue(json['status']),

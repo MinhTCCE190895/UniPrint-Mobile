@@ -57,14 +57,13 @@ void main() {
       expect(find.text('ORD-20261013-001'), findsOneWidget);
       expect(find.text('Sinh viên: Nguyễn Văn A'), findsOneWidget);
 
-      // Verify Pending action buttons: 'Tiếp nhận đơn' and 'Bắt đầu in'
+      // Verify Pending action button: 'Tiếp nhận đơn'
       expect(find.text('Tiếp nhận đơn'), findsOneWidget);
-      expect(find.text('Bắt đầu in'), findsOneWidget);
 
-      // Tap 'Bắt đầu in' button
-      await tester.tap(find.text('Bắt đầu in'));
+      // Tap 'Tiếp nhận đơn' button
+      await tester.tap(find.text('Tiếp nhận đơn'));
       await tester.pump();
-      expect(clickedStatus, OrderStatus.printing.value);
+      expect(clickedStatus, OrderStatus.processing.value);
     });
 
     testWidgets('StaffOrderCard renders Printing state with completion button',

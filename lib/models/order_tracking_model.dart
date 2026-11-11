@@ -17,7 +17,7 @@ class TimelineStep {
   });
 
   factory TimelineStep.fromJson(Map<String, dynamic> json) => TimelineStep(
-    status: OrderStatus.fromValue(json['status'] is int ? json['status'] : 1),
+    status: OrderStatus.fromValue(json['status']),
     label: json['label']?.toString() ?? '',
     isDone: json['isDone'] == true,
     isCurrent: json['isCurrent'] == true,
@@ -121,9 +121,7 @@ class OrderTrackingModel {
   }
 
   factory OrderTrackingModel.fromJson(Map<String, dynamic> json) {
-    final status = OrderStatus.fromValue(
-      json['status'] is int ? json['status'] : 1,
-    );
+    final status = OrderStatus.fromValue(json['status']);
     return OrderTrackingModel(
       id: json['id']?.toString() ?? '',
       orderCode: json['orderCode']?.toString() ?? '',
