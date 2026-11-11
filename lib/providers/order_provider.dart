@@ -219,4 +219,12 @@ class OrderProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  void clear() {
+    _myOrders = [];
+    _staffQueue = [];
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+  }
 }

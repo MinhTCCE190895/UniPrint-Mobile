@@ -102,4 +102,11 @@ class DocumentProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  void clear() {
+    _documents = [];
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+  }
 }
