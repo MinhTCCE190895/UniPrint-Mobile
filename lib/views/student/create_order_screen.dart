@@ -47,7 +47,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             .where((d) => d.id == _selectedDoc!.id)
             .toList();
         if (existing.isNotEmpty) {
-          _selectedDoc = existing.first;
+          setState(() {
+            _selectedDoc = existing.first;
+          });
         }
         _triggerPriceCalculation();
       } else if (docProvider.documents.isNotEmpty) {
@@ -214,7 +216,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     : DropdownButtonHideUnderline(
                         child: DropdownButton<DocumentModel>(
                           isExpanded: true,
-                          value: _selectedDoc,
+                          value: docProvider.documents.contains(_selectedDoc)
+                              ? docProvider.documents.firstWhere(
+                                  (doc) => doc == _selectedDoc)
+                              : null,
                           items: docProvider.documents.map((doc) {
                             return DropdownMenuItem<DocumentModel>(
                               value: doc,
