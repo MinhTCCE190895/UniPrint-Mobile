@@ -202,12 +202,14 @@ class StaffOrderCard extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.statusProcessing,
-                side: const BorderSide(color: AppColors.statusProcessing),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.assignment_turned_in_outlined, size: 14),
+              label: const Text('Tiếp nhận đơn', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.statusProcessing,
+                foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               ),
               onPressed: () => onStatusChange(
                 order,
@@ -215,23 +217,6 @@ class StaffOrderCard extends StatelessWidget {
                 'Tiếp nhận đơn',
                 'Xác nhận tiếp nhận đơn in này vào danh sách chuẩn bị in?',
               ),
-              child: const Text('Tiếp nhận đơn', style: TextStyle(fontSize: 12)),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.statusPrinting,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              ),
-              onPressed: () => onStatusChange(
-                order,
-                OrderStatus.printing.value,
-                'Bắt đầu in ngay',
-                'Xác nhận chuyển thẳng sang in ấn cho đơn hàng này?',
-              ),
-              child: const Text('Bắt đầu in', style: TextStyle(fontSize: 12)),
             ),
           ],
         );
