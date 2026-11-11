@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/print_order_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/document_provider.dart';
 import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'components/assign_shelf_dialog.dart';
@@ -114,6 +115,8 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
     );
 
     if (confirm == true && mounted) {
+      context.read<OrderProvider>().clear();
+      context.read<DocumentProvider>().clear();
       await context.read<AuthProvider>().logout();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(

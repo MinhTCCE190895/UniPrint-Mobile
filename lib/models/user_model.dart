@@ -63,7 +63,7 @@ class UserModel {
     if (json['role'] is int) {
       parsedRole = json['role'];
     } else if (json['role'] is String) {
-      final rStr = (json['role'] as String).toLowerCase();
+      final rStr = (json['role'] as String).toLowerCase().trim();
       if (rStr == 'admin' || rStr == '3') {
         parsedRole = 3;
       } else if (rStr == 'staff' || rStr == '2') {

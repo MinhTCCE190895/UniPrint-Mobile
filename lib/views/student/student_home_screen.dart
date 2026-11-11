@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/print_order_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/document_provider.dart';
 import '../../providers/order_provider.dart';
 import '../auth/login_screen.dart';
 import 'components/cancel_order_dialog.dart';
@@ -76,6 +77,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
 
     if (confirm == true && mounted) {
+      context.read<OrderProvider>().clear();
+      context.read<DocumentProvider>().clear();
       await context.read<AuthProvider>().logout();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -144,11 +147,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         foregroundColor: Colors.white,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('UniPrint Mobile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'UniPrint Mobile',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
             Text(
               'Xin chào, ${auth.currentUser?.fullName ?? 'Sinh viên'}',
               style: const TextStyle(fontSize: 12, color: Colors.white70),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),
